@@ -45,7 +45,7 @@
             background-color: var(--bg-color); color: var(--text-main);
             font-family: 'Tajawal', sans-serif; height: 100vh;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: var(--transition); overflow: hidden; /* Prevent desktop scrolling */
+            transition: var(--transition); overflow: hidden;
             padding: 1rem;
         }
 
@@ -56,7 +56,7 @@
         }
         .particle {
             position: absolute; opacity: 0; pointer-events: none;
-            will-change: transform, opacity; /* GPU Performance boost */
+            will-change: transform, opacity;
         }
 
         /* Header & Signature */
@@ -77,7 +77,7 @@
             box-shadow: var(--shadow); z-index: 1; width: 100%; max-width: 650px;
             text-align: center; border: 1px solid var(--border-color);
             position: relative; backdrop-filter: var(--glass-blur);
-            max-height: 85vh; overflow-y: auto; scrollbar-width: none; /* Hide scrollbar inside if needed on tiny screens */
+            max-height: 85vh; overflow-y: auto; scrollbar-width: none;
         }
 
         /* Top Bar */
@@ -97,7 +97,6 @@
         .td-sunset { background: #ff9f43; }
         .td-monochrome { background: #8395a7; }
 
-        /* Dark Mode Switch */
         .mode-switch {
             position: relative; width: 48px; height: 26px; flex-shrink: 0;
             background: var(--border-color); border-radius: 30px; cursor: pointer; transition: var(--transition);
@@ -124,6 +123,7 @@
             margin: 0; transition: var(--transition); line-height: 1.1;
         }
         .timer-display.running { color: var(--primary); text-shadow: var(--timer-glow); }
+        .timer-display.flow { color: #00d2d3; text-shadow: 0 0 20px rgba(0, 210, 211, 0.4); }
 
         /* Controls */
         .controls { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 1.5rem; }
@@ -136,8 +136,10 @@
         .btn-primary { background: var(--text-main); color: var(--surface-color); border-color: var(--text-main); }
         .btn-primary:hover { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 8px 20px var(--primary-glow); transform: translateY(-2px); }
         .btn:hover:not(.btn-primary) { border-color: var(--text-muted); transform: translateY(-2px); }
+        .btn-flow { border-color: #00d2d3; color: var(--text-main); }
+        .btn-flow:hover { background: #00d2d3; color: #fff; border-color: #00d2d3; box-shadow: 0 8px 20px rgba(0, 210, 211, 0.4); }
 
-        /* Bottom Links */
+        /* Bottom Links & Modals */
         .bottom-links { margin-top: 1.5rem; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
         .link-btn {
             background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 500;
@@ -145,7 +147,6 @@
         }
         .link-btn:hover { color: var(--primary); }
 
-        /* Modals Overlay */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--modal-bg); backdrop-filter: var(--glass-blur);
@@ -171,7 +172,6 @@
         /* Settings Specific */
         .settings-modal { max-width: 500px; max-height: 90vh; overflow-y: auto; scrollbar-width: none; }
         .setting-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); }
-        .setting-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .setting-label { display: flex; flex-direction: column; text-align: right; }
         .setting-label span { font-size: 1rem; color: var(--text-main); font-weight: 500; }
         .setting-label small { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
@@ -183,16 +183,19 @@
         }
         .setting-input:focus { border-color: var(--primary); }
 
-        /* Custom Toggles & Slider */
         .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text-main); transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #fff; }
-
         .vol-slider { -webkit-appearance: none; width: 100px; height: 4px; border-radius: 5px; background: var(--border-color); outline: none; direction: ltr; }
         .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+
+        /* Action Buttons Grid */
+        .action-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1.5rem; }
+        .action-btn { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 12px; cursor: pointer; font-family: 'Tajawal'; font-weight: 600; transition: var(--transition); }
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
 
         /* Stats Full Screen Modal */
         .stats-modal { max-width: 1100px; height: 85vh; display: flex; flex-direction: column; }
@@ -200,30 +203,37 @@
         .chart-section { flex: 1.2; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 16px; padding: 1rem; min-height: 200px;}
         .history-section { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
         
+        .date-select-container { display: flex; gap: 10px; }
         .date-select {
-            padding: 12px; border-radius: 12px; border: 2px solid var(--border-color);
+            flex: 1; padding: 12px; border-radius: 12px; border: 2px solid var(--border-color);
             background: var(--bg-color); color: var(--text-main); font-family: 'Tajawal', sans-serif;
-            font-size: 1rem; outline: none; cursor: pointer; width: 100%; font-weight: 500;
+            font-size: 1rem; outline: none; cursor: pointer; font-weight: 500;
         }
-        
+        .add-session-btn { background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 15px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; transition: var(--transition); }
+        .add-session-btn:hover { opacity: 0.9; transform: scale(1.05); }
+
         .sessions-list {
             flex: 1; overflow-y: auto; background: var(--bg-color); border-radius: 16px; padding: 1rem;
             scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
         }
         .session-item { padding: 1rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .session-item:last-child { border-bottom: none; }
-        .s-name { font-weight: 600; color: var(--text-main); font-size: 1rem; word-break: break-word; text-align: right;}
-        .s-meta { font-size: 0.85rem; color: var(--text-muted); font-family: 'Outfit', sans-serif; white-space: nowrap; background: var(--surface-color); padding: 4px 8px; border-radius: 6px;}
+        .s-info { flex: 1; text-align: right; }
+        .s-name { font-weight: 600; color: var(--text-main); font-size: 1rem; word-break: break-word;}
+        .s-meta { font-size: 0.85rem; color: var(--text-muted); font-family: 'Outfit', sans-serif; display: inline-block; background: var(--surface-color); padding: 4px 8px; border-radius: 6px; margin-top: 5px;}
+        
+        .s-actions { display: flex; gap: 8px; }
+        .icon-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; opacity: 0.7; transition: var(--transition); }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
 
-        /* Mobile specific adjustments */
         @media (max-width: 768px) { 
-            body { overflow-y: auto; height: auto; min-height: 100vh; } /* Allow scroll on small mobile if needed */
+            body { overflow-y: auto; height: auto; min-height: 100vh; }
             .stats-content { flex-direction: column; }
             .chart-section { flex: none; height: 250px; }
             .stats-modal { height: 95vh; }
         }
 
-        /* --- Theme Keyframes & Particles --- */
+        /* Animations */
         @keyframes driftUp { 0% { transform: translateY(110vh) scale(0.8); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: translateY(-10vh) scale(1.2); opacity: 0; } }
         @keyframes driftDown { 0% { transform: translateY(-10vh); opacity: 0.8; } 100% { transform: translateY(110vh); opacity: 0; } }
         @keyframes leafFall { 0% { transform: translateY(-10vh) rotate(0deg) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(110vh) rotate(360deg) translateX(50px); opacity: 0; } }
@@ -260,6 +270,7 @@
 
         <div class="controls">
             <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+            <button class="btn btn-flow" id="flowBtn" onclick="toggleFlowMode()">Flow ♾️</button>
             <button class="btn" onclick="resetTimer()">Reset</button>
         </div>
 
@@ -290,7 +301,6 @@
                 <div class="setting-label"><span>عدد الجلسات</span><small>للحصول على راحة طويلة</small></div>
                 <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="updateSettings()">
             </div>
-            
             <div class="setting-group">
                 <div class="setting-label"><span>بدء الراحة تلقائياً</span><small>بدون تدخل منك</small></div>
                 <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="updateSettings()"><span class="slider"></span></label>
@@ -299,9 +309,15 @@
                 <div class="setting-label"><span>بدء التركيز تلقائياً</span><small>بعد انتهاء الراحة</small></div>
                 <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="updateSettings()"><span class="slider"></span></label>
             </div>
-            <div class="setting-group">
+            <div class="setting-group" style="border-bottom: none;">
                 <div class="setting-label"><span>مستوى الصوت</span><small>لجرس التنبيه</small></div>
                 <input type="range" id="alarmVolume" class="vol-slider" min="0" max="1" step="0.1" value="0.5" onchange="testSound()">
+            </div>
+
+            <div class="action-btns-grid">
+                <button class="action-btn" onclick="exportData()">تصدير البيانات 📤</button>
+                <button class="action-btn" onclick="document.getElementById('importFile').click()">استيراد البيانات 📥</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
             </div>
         </div>
     </div>
@@ -312,7 +328,10 @@
             <h2 class="modal-title">سجل الإنجازات</h2>
             <div class="stats-content">
                 <div class="history-section">
-                    <select id="dateSelector" class="date-select" onchange="renderDayDetails()"></select>
+                    <div class="date-select-container">
+                        <select id="dateSelector" class="date-select" onchange="renderDayDetails()"></select>
+                        <button class="add-session-btn" onclick="addManualSession()" title="إضافة جلسة يدوية">➕</button>
+                    </div>
                     <div class="sessions-list" id="sessionsList"></div>
                 </div>
                 <div class="chart-section">
@@ -323,27 +342,30 @@
     </div>
 
     <script>
-        // State
+        // State Variables
         let timerId = null;
         let isRunning = false;
+        let isFlowMode = false; // New Mode
         let currentMode = 'work'; 
         let completedCycles = 0;
         let sessionStartTime = null;
         
         let config = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, cyclesLimit: 4, autoBreak: false, autoFocus: false, volume: 0.5 };
         let timeLeft = config.work;
+        let flowSeconds = 0; // Tracks open-ended time
 
         const timeDisplay = document.getElementById('timeDisplay');
         const startBtn = document.getElementById('startBtn');
+        const flowBtn = document.getElementById('flowBtn');
         const phaseText = document.getElementById('phaseText');
         const taskInput = document.getElementById('taskInput');
         let myChart = null;
         const alarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // Particle System variables
+        // Particles
         let particleInterval = null;
         let activeParticlesCount = 0;
-        const MAX_PARTICLES = 35; // Performance limit
+        const MAX_PARTICLES = 35;
         const particlesContainer = document.getElementById('particles');
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -353,16 +375,13 @@
             updateDisplay();
             initChart();
 
-            // Page Visibility API for Performance
             document.addEventListener("visibilitychange", () => {
-                if (document.hidden && isRunning) {
-                    clearInterval(particleInterval); // Pause animations to save CPU/Battery
-                } else if (!document.hidden && isRunning) {
-                    startParticles(); // Resume when back
-                }
+                if (document.hidden && isRunning) clearInterval(particleInterval);
+                else if (!document.hidden && isRunning) startParticles();
             });
         });
 
+        // --- Core Functions ---
         function loadSavedConfig() {
             const saved = JSON.parse(localStorage.getItem('pomoConfig'));
             if(saved) config = {...config, ...saved};
@@ -387,7 +406,7 @@
             config.autoFocus = document.getElementById('autoFocus').checked;
             config.volume = document.getElementById('alarmVolume').value;
             localStorage.setItem('pomoConfig', JSON.stringify(config));
-            if(!isRunning) resetTimer();
+            if(!isRunning && !isFlowMode) resetTimer();
         }
 
         function testSound() {
@@ -419,9 +438,12 @@
             if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: body });
         }
 
+        // --- Standard Timer Logic ---
         function toggleTimer() {
             if ("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
             
+            if(isFlowMode) { alert('أنت حالياً في وضع التدفق (Flow Mode)، يرجى إيقافه أولاً! ⏹️'); return; }
+
             if (isRunning) {
                 clearInterval(timerId); isRunning = false;
                 startBtn.innerText = "Resume"; timeDisplay.classList.remove('running');
@@ -435,9 +457,46 @@
             }
         }
 
+        // --- NEW: Flow Mode Logic ♾️ ---
+        function toggleFlowMode() {
+            if ("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
+            
+            if (isRunning && !isFlowMode) { alert('أوقف العداد العادي أولاً قبل بدء وضع التدفق! ⏳'); return; }
+
+            if (isFlowMode) {
+                // Stop Flow
+                clearInterval(timerId); isRunning = false; isFlowMode = false;
+                timeDisplay.classList.remove('flow', 'running');
+                flowBtn.innerText = "Flow ♾️"; flowBtn.classList.remove('btn-primary');
+                stopParticles();
+                
+                // Save accumulated time
+                const minutesFocused = Math.floor(flowSeconds / 60);
+                if(minutesFocused > 0) {
+                    saveSession(taskInput.value.trim() || 'جلسة تدفق حر (Flow)', minutesFocused, sessionStartTime);
+                    triggerNotification("أداء رائع!", `قضيت ${minutesFocused} دقيقة في حالة تركيز عميق.`);
+                }
+                resetTimer();
+            } else {
+                // Start Flow
+                isFlowMode = true; isRunning = true; flowSeconds = 0;
+                sessionStartTime = new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+                flowBtn.innerText = "Stop ⏹️"; flowBtn.classList.add('btn-primary');
+                startBtn.innerText = "Start"; // Reset standard btn text
+                timeDisplay.classList.add('flow');
+                phaseText.innerText = "Flow Mode (Deep Focus)";
+                timerId = setInterval(tick, 1000);
+                startParticles();
+            }
+        }
+
         function tick() {
-            if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
-            else handleComplete();
+            if (isFlowMode) {
+                flowSeconds++; updateDisplay();
+            } else {
+                if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
+                else handleComplete();
+            }
         }
 
         function handleComplete() {
@@ -466,25 +525,31 @@
         }
 
         function resetTimer() {
-            clearInterval(timerId); isRunning = false; stopParticles(); timeDisplay.classList.remove('running');
-            currentMode = 'work'; timeLeft = config.work; sessionStartTime = null;
+            clearInterval(timerId); isRunning = false; isFlowMode = false;
+            stopParticles(); timeDisplay.classList.remove('running', 'flow');
+            flowBtn.innerText = "Flow ♾️"; flowBtn.classList.remove('btn-primary');
+            currentMode = 'work'; timeLeft = config.work; flowSeconds = 0; sessionStartTime = null;
             phaseText.innerText = "Focus"; startBtn.innerText = "Start"; updateDisplay();
         }
 
         function updateDisplay() {
-            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-            const s = (timeLeft % 60).toString().padStart(2, '0');
-            timeDisplay.innerText = `${m}:${s}`; document.title = `${m}:${s} - Focus`;
+            let totalSeconds = isFlowMode ? flowSeconds : timeLeft;
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            
+            const formattedTime = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+            timeDisplay.innerText = formattedTime; 
+            document.title = `${formattedTime} - ${isFlowMode ? 'Flow' : 'Focus'}`;
         }
 
-        // --- Pro Performance Particles Engine ---
+        // --- Particles Engine ---
         function startParticles() {
             clearInterval(particleInterval);
             const theme = document.documentElement.getAttribute('data-color');
-            let freq = theme === 'cyberpunk' ? 250 : 600; // Less frequent to save CPU
+            let freq = (theme === 'cyberpunk' || isFlowMode) ? 250 : 600; 
             
             particleInterval = setInterval(() => {
-                // Performance safeguard: Pause if tab inactive OR too many nodes
                 if (document.hidden || activeParticlesCount >= MAX_PARTICLES) return;
                 
                 const p = document.createElement('div');
@@ -492,52 +557,53 @@
                 p.style.left = Math.random() * 100 + 'vw';
                 activeParticlesCount++;
                 
-                const duration = Math.random() * 3 + 4; // 4 to 7 seconds
+                const duration = Math.random() * 3 + 4;
 
-                switch(theme) {
-                    case 'tomato':
-                        p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = p.style.width;
-                        p.style.background = '#ff4757'; p.style.borderRadius = '50%';
-                        p.style.animation = `driftUp ${duration}s ease-in forwards`;
-                        break;
-                    case 'sunset':
-                        p.style.width = Math.random() * 6 + 3 + 'px'; p.style.height = p.style.width;
-                        p.style.background = '#ff9f43'; p.style.borderRadius = '50%'; p.style.boxShadow = '0 0 8px #ff9f43';
-                        p.style.animation = `driftUp ${duration}s ease-in forwards`;
-                        break;
-                    case 'sakura':
-                        p.style.width = '14px'; p.style.height = '14px';
-                        p.style.background = '#ff9ff3'; p.style.borderRadius = '50% 0 50% 50%';
-                        p.style.animation = `leafFall ${duration + 1}s linear forwards`;
-                        break;
-                    case 'ocean':
-                        p.style.width = Math.random() * 10 + 5 + 'px'; p.style.height = p.style.width;
-                        p.style.border = '2px solid #0abde3'; p.style.borderRadius = '50%'; p.style.background = 'transparent';
-                        p.style.animation = `bubbleRise ${duration - 1}s ease-in forwards`;
-                        break;
-                    case 'cyberpunk':
-                        p.style.width = '2px'; p.style.height = Math.random() * 40 + 15 + 'px';
-                        p.style.background = '#00d2d3'; p.style.boxShadow = '0 0 10px #00d2d3';
-                        p.style.animation = `driftDown ${duration - 2}s linear forwards`;
-                        break;
-                    case 'monochrome':
-                        p.style.width = '10px'; p.style.height = '10px';
-                        p.style.background = '#8395a7';
-                        p.style.animation = `spinDrift ${duration}s linear forwards`;
-                        break;
+                if (isFlowMode) {
+                    p.style.width = Math.random() * 5 + 3 + 'px'; p.style.height = p.style.width;
+                    p.style.background = '#00d2d3'; p.style.borderRadius = '50%'; p.style.boxShadow = '0 0 12px #00d2d3';
+                    p.style.animation = `driftUp ${duration - 1}s ease-in forwards`;
+                } else {
+                    switch(theme) {
+                        case 'tomato':
+                            p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = p.style.width;
+                            p.style.background = '#ff4757'; p.style.borderRadius = '50%';
+                            p.style.animation = `driftUp ${duration}s ease-in forwards`;
+                            break;
+                        case 'sunset':
+                            p.style.width = Math.random() * 6 + 3 + 'px'; p.style.height = p.style.width;
+                            p.style.background = '#ff9f43'; p.style.borderRadius = '50%'; p.style.boxShadow = '0 0 8px #ff9f43';
+                            p.style.animation = `driftUp ${duration}s ease-in forwards`;
+                            break;
+                        case 'sakura':
+                            p.style.width = '14px'; p.style.height = '14px';
+                            p.style.background = '#ff9ff3'; p.style.borderRadius = '50% 0 50% 50%';
+                            p.style.animation = `leafFall ${duration + 1}s linear forwards`;
+                            break;
+                        case 'ocean':
+                            p.style.width = Math.random() * 10 + 5 + 'px'; p.style.height = p.style.width;
+                            p.style.border = '2px solid #0abde3'; p.style.borderRadius = '50%'; p.style.background = 'transparent';
+                            p.style.animation = `bubbleRise ${duration - 1}s ease-in forwards`;
+                            break;
+                        case 'cyberpunk':
+                            p.style.width = '2px'; p.style.height = Math.random() * 40 + 15 + 'px';
+                            p.style.background = '#00d2d3'; p.style.boxShadow = '0 0 10px #00d2d3';
+                            p.style.animation = `driftDown ${duration - 2}s linear forwards`;
+                            break;
+                        case 'monochrome':
+                            p.style.width = '10px'; p.style.height = '10px';
+                            p.style.background = '#8395a7';
+                            p.style.animation = `spinDrift ${duration}s linear forwards`;
+                            break;
+                    }
                 }
-                
                 particlesContainer.appendChild(p);
-                
                 setTimeout(() => { p.remove(); activeParticlesCount--; }, duration * 1000);
             }, freq);
         }
-        
-        function stopParticles() { 
-            clearInterval(particleInterval); particlesContainer.innerHTML = ''; activeParticlesCount = 0;
-        }
+        function stopParticles() { clearInterval(particleInterval); particlesContainer.innerHTML = ''; activeParticlesCount = 0; }
 
-        // --- Data & Charts ---
+        // --- NEW: Data Management (Export/Import/Edit) ---
         function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
         function saveSession(task, duration, startTime) {
@@ -548,14 +614,101 @@
             localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
         }
 
+        // Add Manual Session
+        function addManualSession() {
+            let targetDate = document.getElementById('dateSelector').value || getToday();
+            let taskName = prompt("اسم المهمة / المشروع:", "جلسة مسجلة يدوياً");
+            if (!taskName) return;
+            let durationStr = prompt("مدة الجلسة بالدقائق:", "25");
+            let duration = parseInt(durationStr);
+            if (isNaN(duration) || duration <= 0) return alert("مدة غير صالحة!");
+
+            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
+            if(!data[targetDate]) data[targetDate] = { totalMins: 0, sessions: [] };
+            
+            data[targetDate].totalMins += duration;
+            data[targetDate].sessions.unshift({
+                name: taskName,
+                duration: duration,
+                time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})
+            });
+            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
+            loadFullStats();
+        }
+
+        // Edit Session
+        function editSession(dateStr, index) {
+            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced'));
+            let session = data[dateStr].sessions[index];
+            
+            let newName = prompt("تعديل اسم المهمة:", session.name);
+            if (newName === null) return;
+            let newDurStr = prompt("تعديل المدة بالدقائق:", session.duration);
+            let newDur = parseInt(newDurStr);
+            if (isNaN(newDur) || newDur < 0) return alert("مدة غير صالحة!");
+
+            data[dateStr].totalMins -= session.duration; // Remove old
+            session.name = newName;
+            session.duration = newDur;
+            data[dateStr].totalMins += newDur; // Add new
+            
+            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
+            loadFullStats();
+        }
+
+        // Delete Session
+        function deleteSession(dateStr, index) {
+            if(!confirm("هل أنت متأكد من حذف هذه الجلسة؟ 🗑️")) return;
+            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced'));
+            
+            data[dateStr].totalMins -= data[dateStr].sessions[index].duration;
+            data[dateStr].sessions.splice(index, 1);
+            
+            if(data[dateStr].sessions.length === 0) delete data[dateStr]; // Clean up empty days
+            
+            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
+            loadFullStats();
+        }
+
+        // Export Data
+        function exportData() {
+            const data = localStorage.getItem('pomoDataAdvanced') || '{}';
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'pomodoro_backup.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Import Data
+        function importData(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedJson = JSON.parse(e.target.result);
+                    localStorage.setItem('pomoDataAdvanced', JSON.stringify(importedJson));
+                    alert('تم استيراد البيانات بنجاح! 🎉');
+                    if(document.getElementById('statsModal').classList.contains('active')) loadFullStats();
+                } catch(err) {
+                    alert('عفواً، الملف غير صالح! ❌');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        }
+
+        // --- UI Rendering ---
         function loadFullStats() {
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
             const selector = document.getElementById('dateSelector'); selector.innerHTML = '';
             const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
             
             if(dates.length === 0) {
-                selector.innerHTML = '<option>لا توجد بيانات مسجلة</option>';
-                document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem;">ابدأ جلستك الأولى لعرض الإحصائيات</div>';
+                selector.innerHTML = `<option value="${getToday()}">اليوم (${getToday()})</option>`;
+                document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem;">لا توجد بيانات مسجلة، ابدأ التركيز الآن! أو أضف جلسة يدوية.</div>';
                 updateChart({}, []); return;
             }
 
@@ -571,6 +724,7 @@
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
             const selectedDate = document.getElementById('dateSelector').value;
             const list = document.getElementById('sessionsList'); list.innerHTML = '';
+            
             if(!data[selectedDate]) return;
 
             const summaryDiv = document.createElement('div');
@@ -578,9 +732,18 @@
             summaryDiv.innerHTML = `<div style="font-size: 1.1rem; font-weight: bold;">إجمالي التركيز: <span style="color: var(--primary); font-family: Outfit; font-size:1.3rem;">${data[selectedDate].totalMins}</span> دقيقة</div>`;
             list.appendChild(summaryDiv);
 
-            data[selectedDate].sessions.forEach(s => {
+            data[selectedDate].sessions.forEach((s, index) => {
                 const item = document.createElement('div'); item.className = 'session-item';
-                item.innerHTML = `<div class="s-name">${s.name}</div><div class="s-meta">${s.duration} Min • ${s.time}</div>`;
+                item.innerHTML = `
+                    <div class="s-info">
+                        <div class="s-name">${s.name}</div>
+                        <div class="s-meta">${s.duration} Min • ${s.time}</div>
+                    </div>
+                    <div class="s-actions">
+                        <button class="icon-btn" onclick="editSession('${selectedDate}', ${index})" title="تعديل">✏️</button>
+                        <button class="icon-btn" onclick="deleteSession('${selectedDate}', ${index})" title="حذف">❌</button>
+                    </div>
+                `;
                 list.appendChild(item);
             });
         }
