@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-theme="dark" data-color="tomato">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Focus</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Outfit:wght@400;600;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+    <title>Pomodoro Focus & Time Blocks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Outfit:wght@300;400;600;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            /* Light Mode Default */
+            /* Light Mode */
             --bg-color: #f4f6f8;
             --surface-color: #ffffff;
             --text-main: #2d3436;
@@ -18,305 +19,497 @@
             --modal-bg: rgba(255, 255, 255, 0.85);
             --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             --glass-blur: blur(16px);
+            
+            /* Dynamic Theme Variables */
+            --primary: #ff4757; 
+            --primary-glow: rgba(255, 71, 87, 0.3);
+            
+            /* Timeline */
+            --block-blank: #f1f5f9;
+            --block-blank-hover: #e2e8f0;
+            --selection-border: var(--primary);
         }
 
         /* Dark Mode */
         [data-theme="dark"] {
-            --bg-color: #0b0c10;
-            --surface-color: #1a1b20;
-            --text-main: #f8f9fa;
-            --text-muted: #8a9ba8;
-            --border-color: #2d3748;
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-main: #f5f5f5;
+            --text-muted: #a3a3a3;
+            --border-color: #333333;
             --shadow: 0 15px 35px -5px rgba(0,0,0,0.5);
-            --modal-bg: rgba(11, 12, 16, 0.85);
+            --modal-bg: rgba(18, 18, 18, 0.85);
+            --block-blank: #262626; 
+            --block-blank-hover: #3a3a3a; 
         }
 
-        /* Premium Themes Config */
-        [data-color="tomato"] { --primary: #ff4757; --primary-glow: rgba(255, 71, 87, 0.3); --timer-glow: none; }
-        [data-color="sakura"] { --primary: #ff9ff3; --primary-glow: rgba(255, 159, 243, 0.3); --timer-glow: none; }
-        [data-color="ocean"] { --primary: #0abde3; --primary-glow: rgba(10, 189, 227, 0.3); --timer-glow: none; }
-        [data-color="cyberpunk"] { --primary: #00d2d3; --primary-glow: rgba(0, 210, 211, 0.4); --timer-glow: 0 0 25px var(--primary-glow); }
-        [data-color="sunset"] { --primary: #ff9f43; --primary-glow: rgba(255, 159, 67, 0.3); --timer-glow: none; }
-        [data-color="monochrome"] { --primary: #8395a7; --primary-glow: rgba(131, 149, 167, 0.3); --timer-glow: none; }
+        /* AMOLED Mode */
+        [data-theme="amoled"] {
+            --bg-color: #000000;
+            --surface-color: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border-color: #1a1a1a;
+            --shadow: 0 20px 40px rgba(0,0,0,0.8);
+            --modal-bg: rgba(0, 0, 0, 0.95);
+            --block-blank: #111111; 
+            --block-blank-hover: #222222; 
+        }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         
         body {
             background-color: var(--bg-color); color: var(--text-main);
-            font-family: 'Tajawal', sans-serif; height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: var(--transition); overflow: hidden;
-            padding: 1rem;
+            font-family: 'Outfit', 'Tajawal', sans-serif; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden;
+            padding: 2rem 1rem 180px 1rem;
         }
 
-        /* Hardware Accelerated Particles */
-        #particles { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; z-index: 0; overflow: hidden;
-        }
-        .particle {
-            position: absolute; opacity: 0; pointer-events: none;
-            will-change: transform, opacity;
-        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; transition: var(--transition); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* Header & Signature */
-        .app-header { text-align: center; margin-bottom: 1.5rem; z-index: 1; }
-        .app-title {
-            font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800;
-            letter-spacing: 3px; text-transform: uppercase; color: var(--text-main);
-            margin-bottom: -5px; line-height: 1;
-        }
-        .app-signature {
-            font-family: 'Dancing Script', cursive; font-size: clamp(1rem, 2.5vw, 1.4rem); color: var(--primary);
-            opacity: 0.9; transition: var(--transition);
-        }
+        input[type="text"], input[type="number"], select { user-select: auto; font-family: 'Outfit', 'Tajawal', sans-serif; }
 
-        /* Main Container */
-        .container {
-            background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 28px;
-            box-shadow: var(--shadow); z-index: 1; width: 100%; max-width: 650px;
-            text-align: center; border: 1px solid var(--border-color);
-            position: relative; backdrop-filter: var(--glass-blur);
-            max-height: 85vh; overflow-y: auto; scrollbar-width: none;
-        }
+        /* Particles */
+        #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .particle { position: absolute; opacity: 0; pointer-events: none; will-change: transform, opacity; }
 
-        /* Top Bar */
+        /* Utility */
+        .icon { width: 20px; height: 20px; fill: currentColor; display: inline-block; vertical-align: middle; }
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-lg { width: 24px; height: 24px; }
+
+        .app-wrapper { width: 100%; max-width: 1000px; z-index: 1; display: flex; flex-direction: column; gap: 2rem; }
+
+        /* Header */
+        .app-header { text-align: center; }
+        .app-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--text-main); margin-bottom: -5px; line-height: 1; transition: color 0.3s; }
+        .app-signature { font-family: 'Dancing Script', cursive; font-size: clamp(1rem, 2.5vw, 1.4rem); color: var(--primary); opacity: 0.9; transition: color 0.3s; }
+
+        /* Glass Panels */
+        .glass-panel { background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 24px; box-shadow: var(--shadow); border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); transition: background-color 0.4s, border-color 0.4s, box-shadow 0.4s; }
+
+        /* Top Bar & 3-State Theme Toggle */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .color-palette { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .color-picker-wrapper { position: relative; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border-color); cursor: pointer; flex-shrink: 0; transition: var(--transition); }
+        .color-picker-wrapper:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--primary-glow); }
+        .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 50px; height: 50px; cursor: pointer; border: none; }
         
-        .theme-selector { display: flex; gap: 10px; flex-wrap: wrap; }
-        .theme-dot {
-            width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
-            transition: var(--transition); border: 2px solid transparent;
-        }
-        .theme-dot:hover { transform: scale(1.3); }
-        .theme-dot.active { border-color: var(--text-main); transform: scale(1.2); }
-        .td-tomato { background: #ff4757; }
-        .td-sakura { background: #ff9ff3; }
-        .td-ocean { background: #0abde3; }
-        .td-cyberpunk { background: #00d2d3; }
-        .td-sunset { background: #ff9f43; }
-        .td-monochrome { background: #8395a7; }
+        .swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .swatch:hover { transform: scale(1.2); }
+        .swatch.active { border-color: var(--text-main); transform: scale(1.15); box-shadow: 0 0 12px var(--primary-glow); }
 
-        .mode-switch {
-            position: relative; width: 48px; height: 26px; flex-shrink: 0;
-            background: var(--border-color); border-radius: 30px; cursor: pointer; transition: var(--transition);
-        }
-        .mode-switch::after {
-            content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
-            background: var(--text-main); border-radius: 50%; transition: var(--transition);
-        }
-        [data-theme="dark"] .mode-switch::after { transform: translateX(22px); background: var(--primary); }
+        /* 3-State Toggle */
+        .mode-switch { position: relative; width: 78px; height: 30px; flex-shrink: 0; background: var(--border-color); border-radius: 30px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+        .mode-switch svg { width: 14px; height: 14px; fill: var(--text-muted); z-index: 1; transition: fill 0.4s; }
+        .mode-switch::after { content: ''; position: absolute; top: 3px; left: 4px; width: 24px; height: 24px; background: var(--text-main); border-radius: 50%; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.4s; z-index: 2; }
+        [data-theme="dark"] .mode-switch::after { transform: translateX(23px); background: var(--primary); }
+        [data-theme="amoled"] .mode-switch::after { transform: translateX(46px); background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        [data-theme="dark"] .mode-switch .moon-icon, [data-theme="amoled"] .mode-switch .amoled-icon { fill: var(--surface-color); }
 
-        /* Input & Timer */
-        .task-input {
-            width: 100%; padding: 10px 0; border: none; border-bottom: 2px solid var(--border-color);
-            background: transparent; color: var(--text-main); font-size: clamp(1.1rem, 3vw, 1.4rem); font-weight: 500;
-            text-align: center; outline: none; transition: var(--transition); margin-bottom: 1.5rem;
-        }
+        /* Timer Section */
+        .timer-section { text-align: center; max-width: 650px; margin: 0 auto; width: 100%; }
+        .task-input { width: 100%; padding: 10px 0; border: none; border-bottom: 2px solid var(--border-color); background: transparent; color: var(--text-main); font-size: clamp(1.1rem, 3vw, 1.3rem); font-weight: 500; text-align: center; outline: none; transition: var(--transition); margin-bottom: 1.5rem; }
         .task-input:focus { border-bottom-color: var(--primary); }
         .task-input::placeholder { color: var(--text-muted); font-weight: 300; }
 
-        .phase-text { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-family: 'Outfit', sans-serif;}
-        .timer-display {
-            font-size: clamp(4.5rem, 15vw, 7.5rem); font-weight: 800; color: var(--text-main);
-            font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums;
-            margin: 0; transition: var(--transition); line-height: 1.1;
-        }
-        .timer-display.running { color: var(--primary); text-shadow: var(--timer-glow); }
-        .timer-display.flow { color: #00d2d3; text-shadow: 0 0 20px rgba(0, 210, 211, 0.4); }
+        .phase-text { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-weight: 600; transition: color 0.3s;}
+        .timer-display { font-size: clamp(4.5rem, 15vw, 7.5rem); font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 0; transition: color 0.4s, text-shadow 0.4s; line-height: 1.1; }
+        
+        .timer-display.running { color: var(--primary); text-shadow: 0 0 25px var(--primary-glow); }
+        .timer-display.flow { color: var(--primary); animation: pulseGlow 2.5s infinite ease-in-out; }
 
-        /* Controls */
         .controls { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 1.5rem; }
-        .btn {
-            background: transparent; color: var(--text-main); border: 2px solid var(--border-color);
-            padding: 12px clamp(15px, 4vw, 30px); border-radius: 14px; font-size: clamp(0.9rem, 2vw, 1rem); font-weight: 600;
-            cursor: pointer; transition: var(--transition); font-family: 'Outfit', 'Tajawal', sans-serif;
-            text-transform: uppercase; letter-spacing: 1px; flex: 1; min-width: 110px;
-        }
+        .btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); padding: 12px clamp(15px, 4vw, 30px); border-radius: 14px; font-size: clamp(0.9rem, 2vw, 1rem); font-weight: 600; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px; flex: 1; min-width: 110px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:active { transform: scale(0.96); }
         .btn-primary { background: var(--text-main); color: var(--surface-color); border-color: var(--text-main); }
         .btn-primary:hover { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 8px 20px var(--primary-glow); transform: translateY(-2px); }
         .btn:hover:not(.btn-primary) { border-color: var(--text-muted); transform: translateY(-2px); }
-        .btn-flow { border-color: #00d2d3; color: var(--text-main); }
-        .btn-flow:hover { background: #00d2d3; color: #fff; border-color: #00d2d3; box-shadow: 0 8px 20px rgba(0, 210, 211, 0.4); }
 
-        /* Bottom Links & Modals */
         .bottom-links { margin-top: 1.5rem; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .link-btn {
-            background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 500;
-            cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px;
-        }
-        .link-btn:hover { color: var(--primary); }
+        .link-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+        .link-btn:hover { color: var(--primary); transform: translateY(-1px); }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--modal-bg); backdrop-filter: var(--glass-blur);
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: var(--transition); z-index: 100; padding: 1rem;
-        }
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: var(--glass-blur); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; padding: 1rem; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        
-        .modal-content {
-            background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 24px;
-            width: 100%; border: 1px solid var(--border-color); box-shadow: var(--shadow);
-            position: relative; transform: translateY(20px) scale(0.95); transition: var(--transition);
-        }
+        .modal-content { background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 24px; width: 100%; border: 1px solid var(--border-color); box-shadow: var(--shadow); position: relative; transform: translateY(30px) scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s; }
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s, transform 0.2s; z-index: 10; }
+        .close-btn:hover { color: var(--primary); transform: rotate(90deg); }
+        .modal-title { font-size: clamp(1.2rem, 3vw, 1.5rem); margin-bottom: 1.5rem; color: var(--text-main); font-weight: 700; transition: color 0.3s; }
 
-        .close-btn {
-            position: absolute; top: 15px; left: 15px; background: none; border: none;
-            color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s; z-index: 10; font-family: 'Outfit', sans-serif;
-        }
-        .close-btn:hover { color: var(--primary); }
-        .modal-title { font-size: clamp(1.2rem, 3vw, 1.5rem); margin-bottom: 1.5rem; color: var(--text-main); text-align: right; padding-right: 2rem; font-weight: 700; }
-
-        /* Settings Specific */
-        .settings-modal { max-width: 500px; max-height: 90vh; overflow-y: auto; scrollbar-width: none; }
-        .setting-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); }
-        .setting-label { display: flex; flex-direction: column; text-align: right; }
-        .setting-label span { font-size: 1rem; color: var(--text-main); font-weight: 500; }
-        .setting-label small { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+        /* Settings Layout */
+        .settings-modal { max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .setting-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); transition: border-color 0.3s; }
+        .setting-label { display: flex; flex-direction: column; }
+        .setting-label span { font-size: 1rem; color: var(--text-main); font-weight: 600; transition: color 0.3s;}
+        .setting-label small { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; transition: color 0.3s; }
+        .setting-input { width: 65px; padding: 8px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); text-align: center; font-size: 1rem; outline: none; transition: var(--transition); font-weight: 600;}
+        .setting-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
         
-        .setting-input {
-            width: 65px; padding: 8px; border-radius: 10px; border: 2px solid var(--border-color);
-            background: var(--bg-color); color: var(--text-main); text-align: center; font-family: 'Outfit', sans-serif; font-size: 1rem;
-            outline: none; transition: var(--transition);
-        }
-        .setting-input:focus { border-color: var(--primary); }
-
         .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text-main); transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #fff; }
-        .vol-slider { -webkit-appearance: none; width: 100px; height: 4px; border-radius: 5px; background: var(--border-color); outline: none; direction: ltr; }
-        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+        
+        .vol-slider { -webkit-appearance: none; width: 100px; height: 4px; border-radius: 5px; background: var(--border-color); outline: none; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; transition: transform 0.2s; }
+        .vol-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        /* Action Buttons Grid */
         .action-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1.5rem; }
-        .action-btn { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 12px; cursor: pointer; font-family: 'Tajawal'; font-weight: 600; transition: var(--transition); }
-        .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+        .action-btn { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .action-btn:active { transform: scale(0.96); }
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-        /* Stats Full Screen Modal */
+        /* Stats Modal */
         .stats-modal { max-width: 1100px; height: 85vh; display: flex; flex-direction: column; }
         .stats-content { display: flex; gap: 1.5rem; flex: 1; min-height: 0; }
-        .chart-section { flex: 1.2; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 16px; padding: 1rem; min-height: 200px;}
+        .chart-section { flex: 1.2; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 16px; padding: 1rem; min-height: 200px; transition: background-color 0.4s;}
         .history-section { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
-        
         .date-select-container { display: flex; gap: 10px; }
-        .date-select {
-            flex: 1; padding: 12px; border-radius: 12px; border: 2px solid var(--border-color);
-            background: var(--bg-color); color: var(--text-main); font-family: 'Tajawal', sans-serif;
-            font-size: 1rem; outline: none; cursor: pointer; font-weight: 500;
-        }
-        .add-session-btn { background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 15px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; transition: var(--transition); }
-        .add-session-btn:hover { opacity: 0.9; transform: scale(1.05); }
-
-        .sessions-list {
-            flex: 1; overflow-y: auto; background: var(--bg-color); border-radius: 16px; padding: 1rem;
-            scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
-        }
-        .session-item { padding: 1rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .date-select { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1rem; outline: none; cursor: pointer; font-weight: 600; transition: var(--transition); }
+        .date-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .add-session-btn { background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 15px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center;}
+        .add-session-btn:active { transform: scale(0.92); }
+        .add-session-btn:hover { opacity: 0.9; transform: scale(1.05); box-shadow: 0 4px 12px var(--primary-glow); }
+        .sessions-list { flex: 1; overflow-y: auto; background: var(--bg-color); border-radius: 16px; padding: 1rem; transition: background-color 0.4s; }
+        .session-item { padding: 1rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; transition: border-color 0.3s; }
         .session-item:last-child { border-bottom: none; }
-        .s-info { flex: 1; text-align: right; }
-        .s-name { font-weight: 600; color: var(--text-main); font-size: 1rem; word-break: break-word;}
-        .s-meta { font-size: 0.85rem; color: var(--text-muted); font-family: 'Outfit', sans-serif; display: inline-block; background: var(--surface-color); padding: 4px 8px; border-radius: 6px; margin-top: 5px;}
-        
+        .s-info { flex: 1; }
+        .s-name { font-weight: 600; color: var(--text-main); font-size: 1rem; word-break: break-word; transition: color 0.3s;}
+        .s-meta { font-size: 0.85rem; color: var(--text-muted); display: inline-block; background: var(--surface-color); padding: 4px 8px; border-radius: 6px; margin-top: 5px; font-weight: 500; transition: background-color 0.3s, color 0.3s;}
         .s-actions { display: flex; gap: 8px; }
-        .icon-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; opacity: 0.7; transition: var(--transition); }
-        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        .icon-btn { background: none; border: none; cursor: pointer; opacity: 0.7; transition: var(--transition); color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 6px;}
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); background: var(--border-color); color: var(--primary);}
+
+        /* Timeline Section */
+        .timeline-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid var(--border-color); transition: border-color 0.3s; }
+        .timeline-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px; transition: color 0.3s;}
+        .timeline-stats { display: flex; gap: 1.5rem; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; transition: color 0.3s; }
+        .timeline-stats span { font-weight: 800; color: var(--text-main); transition: color 0.3s; }
+        .timeline-tools { display: flex; gap: 0.5rem; }
+        .tool-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
+        .tool-btn:active { transform: scale(0.92); }
+        .tool-btn:hover { background: var(--border-color); color: var(--text-main); }
+        .tool-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .tool-btn.danger:hover { background: rgba(255, 71, 87, 0.1); color: #ff4757; border-color: rgba(255, 71, 87, 0.3); }
+
+        .timeline-container { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 16px; transition: background-color 0.4s, border-color 0.4s; }
+        .hour-row { display: grid; grid-template-columns: 80px 1fr; border-bottom: 1px solid var(--border-color); transition: border-color 0.3s; }
+        .hour-row:last-child { border-bottom: none; }
+        .hour-label { padding: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; background: var(--bg-color); transition: background-color 0.4s, border-color 0.4s, color 0.3s; }
+        
+        .blocks-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; padding: 4px; background: var(--surface-color); transition: background-color 0.4s; }
+        
+        .time-block { 
+            height: 42px; background-color: var(--block-blank); border-radius: 6px; 
+            cursor: pointer; transition: transform 0.1s ease, background-color 0.3s ease, box-shadow 0.2s; 
+            position: relative; overflow: visible; /* Fixed visibility for popup */
+        }
+        .time-block:hover { background-color: var(--block-blank-hover); }
+        .time-block.selected { 
+            transform: scale(0.92); 
+            box-shadow: 0 0 0 2px var(--selection-border), 0 0 10px rgba(0,0,0,0.3); 
+            z-index: 5; /* Brings selected block above normal grid */
+        }
+        
+        .block-title { 
+            position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 100%; 
+            text-align: center; font-size: 0.75rem; font-weight: 700; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; display: block; 
+            padding: 0 4px; pointer-events: none; letter-spacing: 0.3px; text-shadow: 0 1px 4px rgba(0,0,0,0.6); 
+        }
+        
+        /* Tooltips */
+        .time-block::after { content: attr(data-tooltip); position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--surface-color); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 20; }
+        .time-block:hover::after { opacity: 1; }
+
+        /* Floating + / x Adjuster */
+        .block-adjuster { 
+            position: absolute; top: -38px; left: 50%; transform: translateX(-50%); 
+            display: flex; gap: 4px; z-index: 100; background: var(--surface-color); 
+            border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+            pointer-events: auto;
+        }
+        .adj-btn { 
+            width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; 
+            background: var(--bg-color); color: var(--text-main); cursor: pointer; font-weight: bold; 
+            font-size: 1.3rem; transition: var(--transition); border: 1px solid transparent; line-height: 1; padding-bottom: 2px;
+        }
+        .adj-btn:active { transform: scale(0.85); }
+        .adj-btn.minus:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
+        .adj-btn.plus:hover { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981; }
+
+        /* Timeline Action Panel (Floating Bottom Sheet) */
+        .action-panel { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 150%); width: 90%; max-width: 800px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 24px; padding: 1.5rem; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s, border-color 0.4s; z-index: 200; backdrop-filter: var(--glass-blur); }
+        .action-panel.visible { transform: translate(-50%, 0); }
+        
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; transition: border-color 0.3s; }
+        .panel-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; transition: color 0.3s;}
+        .badge { background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; transition: background-color 0.3s; }
+        
+        .panel-content { display: flex; flex-direction: column; gap: 1rem; }
+        .panel-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        
+        .input-group { flex-grow: 1; display: flex; align-items: center; gap: 1rem; background: var(--bg-color); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-color); transition: var(--transition); }
+        .input-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .input-group input[type="text"] { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 1rem; font-weight: 500; transition: color 0.3s;}
+        .input-group input[type="text"]::placeholder { color: var(--text-muted); }
+        
+        .color-divider { width: 1px; height: 20px; background: var(--border-color); margin: 0 4px; transition: var(--transition); }
+        .picker-group { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; transition: opacity 0.3s, color 0.3s; }
+        
+        .timeline-swatches { display: flex; gap: 6px; }
+        .ts-swatch { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
+        .ts-swatch.active { border-color: var(--text-main); transform: scale(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+        .btn-group { display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end; margin-top: 0.5rem; }
+        .btn-panel { padding: 0.7rem 1.4rem; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
+        .btn-panel:active { transform: scale(0.95); }
+        .btn-panel:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .bp-save { background-color: var(--text-main); color: var(--surface-color); }
+        .bp-clear { background-color: var(--block-blank-hover); color: var(--text-main); border: 1px solid var(--border-color); }
+        .bp-cancel { background: transparent; color: var(--text-muted); }
+        .bp-cancel:hover { background: var(--border-color); color: var(--text-main); }
+
+        .exporting .timeline-container { border-radius: 0; border: none; }
 
         @media (max-width: 768px) { 
-            body { overflow-y: auto; height: auto; min-height: 100vh; }
+            body { padding-bottom: 300px; }
             .stats-content { flex-direction: column; }
             .chart-section { flex: none; height: 250px; }
             .stats-modal { height: 95vh; }
+            .input-group { flex-wrap: wrap; }
+            .btn-group { flex-direction: column; }
+            .btn-panel { width: 100%; justify-content: center; }
+            .timeline-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .timeline-stats { width: 100%; justify-content: space-between; }
+            .action-panel { width: 95%; padding: 1rem; bottom: 10px; }
         }
 
         /* Animations */
         @keyframes driftUp { 0% { transform: translateY(110vh) scale(0.8); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: translateY(-10vh) scale(1.2); opacity: 0; } }
-        @keyframes driftDown { 0% { transform: translateY(-10vh); opacity: 0.8; } 100% { transform: translateY(110vh); opacity: 0; } }
-        @keyframes leafFall { 0% { transform: translateY(-10vh) rotate(0deg) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(110vh) rotate(360deg) translateX(50px); opacity: 0; } }
-        @keyframes bubbleRise { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-10vh) scale(1.5); opacity: 0; } }
-        @keyframes spinDrift { 0% { transform: translateY(110vh) rotate(0deg); opacity: 0; } 20% { opacity: 0.4; } 100% { transform: translateY(-10vh) rotate(180deg); opacity: 0; } }
+        @keyframes pulseGlow { 0% { text-shadow: 0 0 10px var(--primary-glow); } 50% { text-shadow: 0 0 35px var(--primary-glow); } 100% { text-shadow: 0 0 10px var(--primary-glow); } }
+        @keyframes popIn { 0% { opacity: 0; transform: translate(-50%, 15px) scale(0.8); } 100% { opacity: 1; transform: translate(-50%, 0) scale(1); } }
     </style>
 </head>
 <body>
 
+    <svg style="display: none;">
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></symbol>
+        <symbol id="icon-reset" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></symbol>
+        <symbol id="icon-flow" viewBox="0 0 24 24"><path d="M18.6 6.62c-1.44 0-2.8.56-3.77 1.53L12 10.66 10.48 12h.01L7.8 14.39c-.64.64-1.49.99-2.4.99-1.87 0-3.39-1.51-3.39-3.38S3.53 8.62 5.4 8.62c.91 0 1.76.35 2.44 1.03l1.13 1 1.51-1.34L9.22 8.2C8.2 7.18 6.84 6.62 5.4 6.62 2.42 6.62 0 9.04 0 12s2.42 5.38 5.4 5.38c1.44 0 2.8-.56 3.77-1.53l2.83-2.5.01.01L13.52 12h-.01l2.69-2.39c.64-.64 1.49-.99 2.4-.99 1.87 0 3.39 1.51 3.39 3.38s-1.52 3.38-3.39 3.38c-.9 0-1.76-.35-2.44-1.03l-1.14-1.01-1.51 1.34 1.27 1.12c1.02 1.01 2.37 1.57 3.82 1.57 2.98 0 5.4-2.41 5.4-5.38s-2.42-5.37-5.4-5.37z"/></symbol>
+        <symbol id="icon-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></symbol>
+        <symbol id="icon-stats" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+        <symbol id="icon-export" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
+        <symbol id="icon-import" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
+        <symbol id="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></symbol>
+        <symbol id="icon-add" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+        <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C20.48 10.9 16.89 8 12.5 8z"/></symbol>
+        <symbol id="icon-timeline" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></symbol>
+        <symbol id="icon-amoled" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20V4c4.41 0 8 3.59 8 8s-3.59 8-8 8z"/></symbol>
+        <symbol id="icon-paint" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34c-.39-.39-1.02-.39-1.41 0L9 12.25 11.75 15l8.96-8.96c.39-.39.39-1.02 0-1.41z"/></symbol>
+    </svg>
+
     <div id="particles"></div>
 
-    <div class="app-header">
-        <div class="app-title">Pomodoro</div>
-        <div class="app-signature">By Mohamed Islam</div>
+    <div class="app-wrapper">
+        <div class="app-header">
+            <div class="app-title">Pomodoro</div>
+            <div class="app-signature">By Mohamed Islam</div>
+        </div>
+
+        <div class="glass-panel timer-section">
+            <div class="top-bar">
+                <div class="color-palette" id="main-palette">
+                    </div>
+                
+                <div class="mode-switch" onclick="cycleTheme()" title="Toggle Theme (Light / Dark / AMOLED)">
+                    <svg class="sun-icon"><use href="#icon-sun"></use></svg>
+                    <svg class="moon-icon"><use href="#icon-moon"></use></svg>
+                    <svg class="amoled-icon"><use href="#icon-amoled"></use></svg>
+                </div>
+            </div>
+
+            <input type="text" id="taskInput" class="task-input" dir="auto" placeholder="What are you focusing on?">
+            
+            <div class="phase-text" id="phaseText">Focus</div>
+            <div class="timer-display" id="timeDisplay">25:00</div>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">
+                    <svg class="icon"><use href="#icon-play" id="startIcon"></use></svg> Start
+                </button>
+                <button class="btn btn-flow" id="flowBtn" onclick="toggleFlowMode()">
+                    <svg class="icon"><use href="#icon-flow"></use></svg> Flow 
+                </button>
+                <button class="btn" onclick="resetTimer()">
+                    <svg class="icon"><use href="#icon-reset"></use></svg> Reset
+                </button>
+            </div>
+
+            <div class="bottom-links">
+                <button class="link-btn" onclick="openModal('settingsModal')">
+                    <svg class="icon-sm"><use href="#icon-settings"></use></svg> Settings
+                </button>
+                <button class="link-btn" onclick="openModal('statsModal'); loadFullStats();">
+                    <svg class="icon-sm"><use href="#icon-stats"></use></svg> Statistics
+                </button>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <div class="timeline-header">
+                <div class="timeline-title">
+                    <svg class="icon-lg" style="color: var(--primary)"><use href="#icon-timeline"></use></svg> Daily Time Blocks
+                </div>
+                <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                    <div class="timeline-stats">
+                        <div>Work: <span id="stat-work">0</span> min</div>
+                        <div>Rest: <span id="stat-rest">0</span> min</div>
+                    </div>
+                    <div class="timeline-tools">
+                        <button class="tool-btn" id="btn-undo" title="Undo" disabled><svg class="icon"><use href="#icon-undo"></use></svg></button>
+                        <button class="tool-btn" id="btn-export" title="Export as Image"><svg class="icon"><use href="#icon-export"></use></svg></button>
+                        <button class="tool-btn danger" id="btn-clear-all" title="Clear Day"><svg class="icon"><use href="#icon-delete"></use></svg></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-container" id="timeline">
+                </div>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="top-bar">
-            <div class="theme-selector">
-                <div class="theme-dot td-tomato active" onclick="setTheme('tomato')"></div>
-                <div class="theme-dot td-sunset" onclick="setTheme('sunset')"></div>
-                <div class="theme-dot td-sakura" onclick="setTheme('sakura')"></div>
-                <div class="theme-dot td-ocean" onclick="setTheme('ocean')"></div>
-                <div class="theme-dot td-cyberpunk" onclick="setTheme('cyberpunk')"></div>
-                <div class="theme-dot td-monochrome" onclick="setTheme('monochrome')"></div>
+    <div class="action-panel" id="action-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <svg class="icon" style="color: var(--primary);"><use href="#icon-paint"></use></svg>
+                Editing Blocks
+                <span class="badge" id="selection-count">0 selected</span>
             </div>
-            <div class="mode-switch" onclick="toggleDarkMode()"></div>
         </div>
-
-        <input type="text" id="taskInput" class="task-input" dir="auto" placeholder="ما الذي تركز عليه الآن؟">
         
-        <div class="phase-text" id="phaseText">Focus</div>
-        <div class="timer-display" id="timeDisplay">25:00</div>
+        <div class="panel-content">
+            <div class="panel-row">
+                <div class="input-group" style="flex: 2;">
+                    <input type="text" id="timeline-task-input" placeholder="Task Name (e.g., Coding, Reading)" autocomplete="off" dir="auto">
+                    <div class="color-divider"></div>
+                    <div class="picker-group" title="Text Color">
+                        <svg class="icon-sm"><use href="#icon-edit"></use></svg>
+                        <div class="color-picker-wrapper" style="width: 22px; height: 22px;">
+                            <input type="color" id="text-color" value="#ffffff">
+                        </div>
+                    </div>
+                </div>
 
-        <div class="controls">
-            <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
-            <button class="btn btn-flow" id="flowBtn" onclick="toggleFlowMode()">Flow ♾️</button>
-            <button class="btn" onclick="resetTimer()">Reset</button>
-        </div>
+                <div class="input-group" style="flex: 1.5; background: transparent; border: none; padding: 0;">
+                    <div class="picker-group" id="manual-color-group">
+                        <span style="font-weight: 700; color: var(--text-main);">Block Color:</span>
+                        <div class="color-picker-wrapper" title="Pick Custom Color">
+                            <input type="color" id="block-color" value="#3b82f6">
+                        </div>
+                        <div class="color-divider" style="margin: 0 8px;"></div>
+                        <div class="timeline-swatches" id="timeline-swatches">
+                            </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="bottom-links">
-            <button class="link-btn" onclick="openModal('settingsModal')">Settings</button>
-            <button class="link-btn" onclick="openModal('statsModal'); loadFullStats();">Statistics</button>
+            <div class="panel-row" style="background: var(--bg-color); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border-color); transition: var(--transition);">
+                <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; color: var(--text-main); font-weight: 700; cursor: pointer;" title="Use the global app color">
+                        <input type="checkbox" id="auto-color-theme" checked style="width:18px; height:18px; accent-color: var(--primary);">
+                        Sync with Theme
+                    </label>
+                    <div class="color-divider"></div>
+                    <label style="display: flex; align-items: center; gap: 0.6rem; color: var(--text-main); font-weight: 600; cursor: pointer;">
+                        <input type="checkbox" id="auto-rest" checked style="width:16px; height:16px; accent-color: var(--primary);">
+                        Append Auto-Rest
+                    </label>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <select id="rest-duration" style="background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 8px; outline: none; font-weight: 600; cursor: pointer; transition: border-color 0.3s;">
+                        <option value="1">5 min (1 Block)</option>
+                        <option value="2">10 min (2 Blocks)</option>
+                        <option value="3" selected>15 min (3 Blocks)</option>
+                        <option value="4">20 min (4 Blocks)</option>
+                        <option value="5">25 min (5 Blocks)</option>
+                        <option value="6">30 min (6 Blocks)</option>
+                        <option value="8">40 min (8 Blocks)</option>
+                        <option value="12">60 min (12 Blocks)</option>
+                    </select>
+                    <div class="color-divider"></div>
+                    <div class="picker-group">
+                        Rest Color:
+                        <div class="color-picker-wrapper" style="width: 20px; height: 20px;">
+                            <input type="color" id="rest-color" value="#10b981">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-panel bp-cancel" id="btn-cancel">Cancel Edit</button>
+                <button class="btn-panel bp-clear" id="btn-clear"><svg class="icon-sm"><use href="#icon-delete"></use></svg> Unplan Blocks</button>
+                <button class="btn-panel bp-save" id="btn-save"><svg class="icon-sm"><use href="#icon-add"></use></svg> Done</button>
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content settings-modal">
-            <button class="close-btn" onclick="closeModal('settingsModal')">✕</button>
-            <h2 class="modal-title">الإعدادات</h2>
+            <button class="close-btn" onclick="closeModal('settingsModal')"><svg class="icon-lg"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Settings</h2>
             
             <div class="setting-group">
-                <div class="setting-label"><span>التركيز</span><small>مدة الجلسة بالدقائق</small></div>
+                <div class="setting-label"><span>Focus Time</span><small>Minutes per session</small></div>
                 <input type="number" id="workMins" class="setting-input" value="25" min="1" onchange="updateSettings()">
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>راحة قصيرة</span><small>مدة الراحة بين الجلسات</small></div>
+                <div class="setting-label"><span>Short Break</span><small>Minutes between sessions</small></div>
                 <input type="number" id="shortBreakMins" class="setting-input" value="5" min="1" onchange="updateSettings()">
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>راحة طويلة</span><small>مدة الراحة بعد عدة جلسات</small></div>
+                <div class="setting-label"><span>Long Break</span><small>Minutes after cycles</small></div>
                 <input type="number" id="longBreakMins" class="setting-input" value="15" min="1" onchange="updateSettings()">
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>عدد الجلسات</span><small>للحصول على راحة طويلة</small></div>
+                <div class="setting-label"><span>Cycle Limit</span><small>Sessions before long break</small></div>
                 <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="updateSettings()">
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>بدء الراحة تلقائياً</span><small>بدون تدخل منك</small></div>
+                <div class="setting-label"><span>Auto-start Breaks</span><small>Start without clicking</small></div>
                 <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="updateSettings()"><span class="slider"></span></label>
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>بدء التركيز تلقائياً</span><small>بعد انتهاء الراحة</small></div>
+                <div class="setting-label"><span>Auto-start Focus</span><small>Start after break ends</small></div>
                 <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="updateSettings()"><span class="slider"></span></label>
             </div>
             <div class="setting-group" style="border-bottom: none;">
-                <div class="setting-label"><span>مستوى الصوت</span><small>لجرس التنبيه</small></div>
+                <div class="setting-label"><span>Alarm Volume</span><small>Notification sound level</small></div>
                 <input type="range" id="alarmVolume" class="vol-slider" min="0" max="1" step="0.1" value="0.5" onchange="testSound()">
             </div>
 
             <div class="action-btns-grid">
-                <button class="action-btn" onclick="exportData()">تصدير البيانات 📤</button>
-                <button class="action-btn" onclick="document.getElementById('importFile').click()">استيراد البيانات 📥</button>
+                <button class="action-btn" onclick="exportData()"><svg class="icon"><use href="#icon-export"></use></svg> Export Data</button>
+                <button class="action-btn" onclick="document.getElementById('importFile').click()"><svg class="icon"><use href="#icon-import"></use></svg> Import Data</button>
                 <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
             </div>
         </div>
@@ -324,13 +517,13 @@
 
     <div class="modal-overlay" id="statsModal">
         <div class="modal-content stats-modal">
-            <button class="close-btn" onclick="closeModal('statsModal')">✕</button>
-            <h2 class="modal-title">سجل الإنجازات</h2>
+            <button class="close-btn" onclick="closeModal('statsModal')"><svg class="icon-lg"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Statistics & History</h2>
             <div class="stats-content">
                 <div class="history-section">
                     <div class="date-select-container">
                         <select id="dateSelector" class="date-select" onchange="renderDayDetails()"></select>
-                        <button class="add-session-btn" onclick="addManualSession()" title="إضافة جلسة يدوية">➕</button>
+                        <button class="add-session-btn" onclick="addManualSession()" title="Add Manual Session"><svg class="icon"><use href="#icon-add"></use></svg></button>
                     </div>
                     <div class="sessions-list" id="sessionsList"></div>
                 </div>
@@ -342,38 +535,70 @@
     </div>
 
     <script>
-        // State Variables
-        let timerId = null;
-        let isRunning = false;
-        let isFlowMode = false; // New Mode
-        let currentMode = 'work'; 
-        let completedCycles = 0;
-        let sessionStartTime = null;
+        // --- Shared State & Global Config ---
+        let currentPrimaryColor = localStorage.getItem('pomoPrimaryColor') || '#ff4757';
+        let mainColors = JSON.parse(localStorage.getItem('mainColors')) || ['#ff4757', '#0abde3', '#00d2d3', '#ff9f43', '#8b5cf6'];
         
+        // Timer Variables
+        let timerId = null, isRunning = false, isFlowMode = false, currentMode = 'work', completedCycles = 0, sessionStartTime = null;
         let config = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, cyclesLimit: 4, autoBreak: false, autoFocus: false, volume: 0.5 };
-        let timeLeft = config.work;
-        let flowSeconds = 0; // Tracks open-ended time
+        let timeLeft = config.work, flowSeconds = 0;
 
-        const timeDisplay = document.getElementById('timeDisplay');
-        const startBtn = document.getElementById('startBtn');
-        const flowBtn = document.getElementById('flowBtn');
-        const phaseText = document.getElementById('phaseText');
-        const taskInput = document.getElementById('taskInput');
-        let myChart = null;
+        // Timeline Variables
+        const BLOCKS_PER_HOUR = 12, TOTAL_HOURS = 24;
+        let blocksData = [], isDragging = false, paintMode = 'add', currentSelection = new Set(), editingOriginalIndices = [], historyStack = [];
+        let recentTimelineColors = JSON.parse(localStorage.getItem('recentTimelineColors')) || ['#3b82f6', '#8b5cf6', '#f97316', '#14b8a6', '#eab308'];
+        let selectedBlockColor = recentTimelineColors[0];
+        
+        // Live Edit Snapshot Backup
+        let backupBlocksSnapshot = null;
+
+        // 3-State Theme Array
+        const themes = ['light', 'dark', 'amoled'];
+        let currentThemeIndex = themes.indexOf(localStorage.getItem('pomoMode') || 'dark');
+        if (currentThemeIndex === -1) currentThemeIndex = 1;
+
+        // DOM Elements
+        const timeDisplay = document.getElementById('timeDisplay'), startBtn = document.getElementById('startBtn'), flowBtn = document.getElementById('flowBtn'), phaseText = document.getElementById('phaseText'), taskInput = document.getElementById('taskInput');
         const alarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-
-        // Particles
-        let particleInterval = null;
-        let activeParticlesCount = 0;
-        const MAX_PARTICLES = 35;
+        let myChart = null;
         const particlesContainer = document.getElementById('particles');
+        let particleInterval = null, activeParticlesCount = 0; const MAX_PARTICLES = 35;
 
+        const timeline = document.getElementById('timeline'), actionPanel = document.getElementById('action-panel'), timelineTaskInput = document.getElementById('timeline-task-input'), btnSave = document.getElementById('btn-save'), btnClear = document.getElementById('btn-clear'), btnCancel = document.getElementById('btn-cancel'), btnClearAll = document.getElementById('btn-clear-all'), btnUndo = document.getElementById('btn-undo'), btnExport = document.getElementById('btn-export'), autoRestToggle = document.getElementById('auto-rest'), restDurationSelect = document.getElementById('rest-duration'), statWork = document.getElementById('stat-work'), statRest = document.getElementById('stat-rest'), textColorInput = document.getElementById('text-color'), blockColorInput = document.getElementById('block-color'), restColorInput = document.getElementById('rest-color'), mainPalette = document.getElementById('main-palette'), timelineSwatches = document.getElementById('timeline-swatches'), selectionCount = document.getElementById('selection-count'), autoThemeToggle = document.getElementById('auto-color-theme'), manualColorGroup = document.getElementById('manual-color-group');
+
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadSavedConfig();
-            if(localStorage.getItem('pomoTheme')) setTheme(localStorage.getItem('pomoTheme'));
-            if(localStorage.getItem('pomoMode')) document.documentElement.setAttribute('data-theme', localStorage.getItem('pomoMode'));
-            updateDisplay();
-            initChart();
+            document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]);
+            applyPrimaryColor(currentPrimaryColor);
+            renderTimelineSwatches();
+            loadSavedConfig(); updateDisplay(); initChart(); initTimeline();
+
+            // Setup Theme vs Custom Color UI State
+            autoThemeToggle.addEventListener('change', (e) => {
+                manualColorGroup.style.opacity = e.target.checked ? '0.3' : '1';
+                manualColorGroup.style.pointerEvents = e.target.checked ? 'none' : 'auto';
+                liveUpdate(); 
+            });
+            manualColorGroup.style.opacity = autoThemeToggle.checked ? '0.3' : '1';
+            manualColorGroup.style.pointerEvents = autoThemeToggle.checked ? 'none' : 'auto';
+
+            // Attach Live Updaters to inputs
+            timelineTaskInput.addEventListener('input', liveUpdate);
+            textColorInput.addEventListener('input', liveUpdate);
+            blockColorInput.addEventListener('input', () => {
+                selectedBlockColor = blockColorInput.value;
+                if (!recentTimelineColors.includes(selectedBlockColor)) {
+                    recentTimelineColors.unshift(selectedBlockColor);
+                    if (recentTimelineColors.length > 5) recentTimelineColors.pop();
+                    localStorage.setItem('recentTimelineColors', JSON.stringify(recentTimelineColors));
+                }
+                renderTimelineSwatches();
+                liveUpdate();
+            });
+            autoRestToggle.addEventListener('change', liveUpdate);
+            restDurationSelect.addEventListener('change', liveUpdate);
+            restColorInput.addEventListener('input', liveUpdate);
 
             document.addEventListener("visibilitychange", () => {
                 if (document.hidden && isRunning) clearInterval(particleInterval);
@@ -381,397 +606,414 @@
             });
         });
 
-        // --- Core Functions ---
-        function loadSavedConfig() {
-            const saved = JSON.parse(localStorage.getItem('pomoConfig'));
-            if(saved) config = {...config, ...saved};
-            
-            document.getElementById('workMins').value = config.work / 60;
-            document.getElementById('shortBreakMins').value = config.shortBreak / 60;
-            document.getElementById('longBreakMins').value = config.longBreak / 60;
-            document.getElementById('cyclesLimit').value = config.cyclesLimit;
-            document.getElementById('autoBreak').checked = config.autoBreak;
-            document.getElementById('autoFocus').checked = config.autoFocus;
-            document.getElementById('alarmVolume').value = config.volume;
-            
-            if(!isRunning) timeLeft = config.work;
-        }
-
-        function updateSettings() {
-            config.work = document.getElementById('workMins').value * 60;
-            config.shortBreak = document.getElementById('shortBreakMins').value * 60;
-            config.longBreak = document.getElementById('longBreakMins').value * 60;
-            config.cyclesLimit = document.getElementById('cyclesLimit').value;
-            config.autoBreak = document.getElementById('autoBreak').checked;
-            config.autoFocus = document.getElementById('autoFocus').checked;
-            config.volume = document.getElementById('alarmVolume').value;
-            localStorage.setItem('pomoConfig', JSON.stringify(config));
-            if(!isRunning && !isFlowMode) resetTimer();
-        }
-
-        function testSound() {
-            config.volume = document.getElementById('alarmVolume').value;
-            alarmSound.volume = config.volume; alarmSound.currentTime = 0; alarmSound.play();
-            localStorage.setItem('pomoConfig', JSON.stringify(config));
-        }
-
-        function toggleDarkMode() {
-            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        // --- Theme Engine ---
+        function cycleTheme() {
+            currentThemeIndex = (currentThemeIndex + 1) % 3;
+            const next = themes[currentThemeIndex];
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('pomoMode', next);
-            if(myChart) loadFullStats(); 
+            if(myChart) loadFullStats();
         }
 
-        function setTheme(color) {
-            document.documentElement.setAttribute('data-color', color);
-            localStorage.setItem('pomoTheme', color);
-            document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
-            document.querySelector(`.td-${color}`).classList.add('active');
-            if(isRunning) { stopParticles(); startParticles(); }
+        function applyPrimaryColor(color) {
+            currentPrimaryColor = color; document.documentElement.style.setProperty('--primary', color);
+            let hex = color.replace('#', '');
+            let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
+            document.documentElement.style.setProperty('--primary-glow', `rgba(${r}, ${g}, ${b}, 0.3)`);
+            localStorage.setItem('pomoPrimaryColor', color);
+            
+            if (!mainColors.includes(color)) { mainColors.unshift(color); if (mainColors.length > 5) mainColors.pop(); localStorage.setItem('mainColors', JSON.stringify(mainColors)); }
+            renderMainSwatches(); 
             if(myChart) loadFullStats();
+            if(blocksData.length > 0) renderTimelineBlocks();
+        }
+
+        function renderMainSwatches() {
+            mainPalette.innerHTML = `
+                <div class="color-picker-wrapper" title="Pick Global Theme Color">
+                    <input type="color" value="${currentPrimaryColor}" onchange="applyPrimaryColor(this.value)">
+                </div>
+                <div class="color-divider" style="height: 16px;"></div>
+            `;
+            mainColors.forEach(color => {
+                const swatch = document.createElement('div'); swatch.className = `swatch ${color === currentPrimaryColor ? 'active' : ''}`;
+                swatch.style.backgroundColor = color; swatch.onclick = () => applyPrimaryColor(color); mainPalette.appendChild(swatch);
+            });
         }
 
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        function triggerNotification(title, body) {
-            if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: body });
+        // --- Timer Engine ---
+        function loadSavedConfig() {
+            const saved = JSON.parse(localStorage.getItem('pomoConfig')); if(saved) config = {...config, ...saved};
+            ['work', 'shortBreak', 'longBreak'].forEach(k => document.getElementById(`${k}Mins`).value = config[k] / 60);
+            document.getElementById('cyclesLimit').value = config.cyclesLimit; document.getElementById('autoBreak').checked = config.autoBreak; document.getElementById('autoFocus').checked = config.autoFocus; document.getElementById('alarmVolume').value = config.volume;
+            if(!isRunning) timeLeft = config.work;
         }
 
-        // --- Standard Timer Logic ---
+        function updateSettings() {
+            ['work', 'shortBreak', 'longBreak'].forEach(k => config[k] = document.getElementById(`${k}Mins`).value * 60);
+            config.cyclesLimit = document.getElementById('cyclesLimit').value; config.autoBreak = document.getElementById('autoBreak').checked; config.autoFocus = document.getElementById('autoFocus').checked; config.volume = document.getElementById('alarmVolume').value;
+            localStorage.setItem('pomoConfig', JSON.stringify(config)); if(!isRunning && !isFlowMode) resetTimer();
+        }
+
+        function testSound() { config.volume = document.getElementById('alarmVolume').value; alarmSound.volume = config.volume; alarmSound.currentTime = 0; alarmSound.play(); localStorage.setItem('pomoConfig', JSON.stringify(config)); }
+
+        function triggerNotification(title, body) { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: body }); }
+
         function toggleTimer() {
             if ("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
-            
-            if(isFlowMode) { alert('أنت حالياً في وضع التدفق (Flow Mode)، يرجى إيقافه أولاً! ⏹️'); return; }
-
-            if (isRunning) {
-                clearInterval(timerId); isRunning = false;
-                startBtn.innerText = "Resume"; timeDisplay.classList.remove('running');
-                stopParticles();
-            } else {
-                if(currentMode === 'work' && !sessionStartTime) sessionStartTime = new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-                isRunning = true;
-                startBtn.innerText = "Pause"; timeDisplay.classList.add('running');
-                timerId = setInterval(tick, 1000);
-                startParticles();
-            }
+            if(isFlowMode) { alert('Stop Flow mode first!'); return; }
+            if (isRunning) { clearInterval(timerId); isRunning = false; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Resume`; timeDisplay.classList.remove('running'); stopParticles(); } 
+            else { if(currentMode === 'work' && !sessionStartTime) sessionStartTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}); isRunning = true; startBtn.innerHTML = `<svg class="icon"><use href="#icon-pause"></use></svg> Pause`; timeDisplay.classList.add('running'); timerId = setInterval(tick, 1000); startParticles(); }
         }
 
-        // --- NEW: Flow Mode Logic ♾️ ---
         function toggleFlowMode() {
             if ("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
-            
-            if (isRunning && !isFlowMode) { alert('أوقف العداد العادي أولاً قبل بدء وضع التدفق! ⏳'); return; }
-
+            if (isRunning && !isFlowMode) { alert('Stop normal timer first!'); return; }
             if (isFlowMode) {
-                // Stop Flow
-                clearInterval(timerId); isRunning = false; isFlowMode = false;
-                timeDisplay.classList.remove('flow', 'running');
-                flowBtn.innerText = "Flow ♾️"; flowBtn.classList.remove('btn-primary');
-                stopParticles();
-                
-                // Save accumulated time
-                const minutesFocused = Math.floor(flowSeconds / 60);
-                if(minutesFocused > 0) {
-                    saveSession(taskInput.value.trim() || 'جلسة تدفق حر (Flow)', minutesFocused, sessionStartTime);
-                    triggerNotification("أداء رائع!", `قضيت ${minutesFocused} دقيقة في حالة تركيز عميق.`);
-                }
-                resetTimer();
+                clearInterval(timerId); isRunning = false; isFlowMode = false; timeDisplay.classList.remove('flow'); flowBtn.innerHTML = `<svg class="icon"><use href="#icon-flow"></use></svg> Flow`; flowBtn.classList.remove('btn-primary'); stopParticles();
+                const mins = Math.floor(flowSeconds / 60); if(mins > 0) { saveSession(taskInput.value.trim() || 'Flow Session', mins, sessionStartTime); triggerNotification("Great Job!", `You focused for ${mins} minutes.`); } resetTimer();
             } else {
-                // Start Flow
-                isFlowMode = true; isRunning = true; flowSeconds = 0;
-                sessionStartTime = new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-                flowBtn.innerText = "Stop ⏹️"; flowBtn.classList.add('btn-primary');
-                startBtn.innerText = "Start"; // Reset standard btn text
-                timeDisplay.classList.add('flow');
-                phaseText.innerText = "Flow Mode (Deep Focus)";
-                timerId = setInterval(tick, 1000);
-                startParticles();
+                isFlowMode = true; isRunning = true; flowSeconds = 0; sessionStartTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}); flowBtn.innerHTML = `<svg class="icon"><use href="#icon-stop"></use></svg> Stop`; flowBtn.classList.add('btn-primary'); startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`; timeDisplay.classList.add('flow'); phaseText.innerText = "Flow Mode (Deep Focus)"; timerId = setInterval(tick, 1000); startParticles();
             }
         }
 
-        function tick() {
-            if (isFlowMode) {
-                flowSeconds++; updateDisplay();
-            } else {
-                if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
-                else handleComplete();
-            }
-        }
+        function tick() { if (isFlowMode) { flowSeconds++; updateDisplay(); } else { if (timeLeft > 0) { timeLeft--; updateDisplay(); } else handleComplete(); } }
 
         function handleComplete() {
-            clearInterval(timerId); isRunning = false; stopParticles(); timeDisplay.classList.remove('running');
-            alarmSound.volume = config.volume; alarmSound.play().catch(e=>console.log(e));
-            
+            clearInterval(timerId); isRunning = false; stopParticles(); timeDisplay.classList.remove('running'); alarmSound.volume = config.volume; alarmSound.play().catch(e=>console.log(e));
             if (currentMode === 'work') {
-                saveSession(taskInput.value.trim() || 'جلسة تركيز', config.work / 60, sessionStartTime);
-                sessionStartTime = null; completedCycles++;
-                
-                if (completedCycles % config.cyclesLimit === 0) {
-                    currentMode = 'longBreak'; timeLeft = config.longBreak; phaseText.innerText = "Long Break";
-                    triggerNotification("راحة طويلة!", `أنجزت ${config.cyclesLimit} دورات.`);
-                } else {
-                    currentMode = 'shortBreak'; timeLeft = config.shortBreak; phaseText.innerText = `Short Break (${completedCycles}/${config.cyclesLimit})`;
-                    triggerNotification("وقت الراحة!", `عاش! استرح قليلاً.`);
-                }
-                startBtn.innerText = "Start Break";
-                if(config.autoBreak) toggleTimer();
-            } else {
-                currentMode = 'work'; timeLeft = config.work; phaseText.innerText = "Focus"; startBtn.innerText = "Start Focus";
-                triggerNotification("انتهت الراحة", `حان وقت التركيز.`);
-                if(config.autoFocus) toggleTimer();
-            }
-            updateDisplay();
+                saveSession(taskInput.value.trim() || 'Focus Session', config.work / 60, sessionStartTime); sessionStartTime = null; completedCycles++;
+                if (completedCycles % config.cyclesLimit === 0) { currentMode = 'longBreak'; timeLeft = config.longBreak; phaseText.innerText = "Long Break"; triggerNotification("Long Break!", `Completed ${config.cyclesLimit} cycles.`); } 
+                else { currentMode = 'shortBreak'; timeLeft = config.shortBreak; phaseText.innerText = `Short Break (${completedCycles}/${config.cyclesLimit})`; triggerNotification("Break Time!", `Take a quick rest.`); }
+                startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start Break`; if(config.autoBreak) toggleTimer();
+            } else { currentMode = 'work'; timeLeft = config.work; phaseText.innerText = "Focus"; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start Focus`; triggerNotification("Break over", `Time to focus.`); if(config.autoFocus) toggleTimer(); } updateDisplay();
         }
 
-        function resetTimer() {
-            clearInterval(timerId); isRunning = false; isFlowMode = false;
-            stopParticles(); timeDisplay.classList.remove('running', 'flow');
-            flowBtn.innerText = "Flow ♾️"; flowBtn.classList.remove('btn-primary');
-            currentMode = 'work'; timeLeft = config.work; flowSeconds = 0; sessionStartTime = null;
-            phaseText.innerText = "Focus"; startBtn.innerText = "Start"; updateDisplay();
-        }
+        function resetTimer() { clearInterval(timerId); isRunning = false; isFlowMode = false; stopParticles(); timeDisplay.classList.remove('running', 'flow'); flowBtn.innerHTML = `<svg class="icon"><use href="#icon-flow"></use></svg> Flow`; flowBtn.classList.remove('btn-primary'); currentMode = 'work'; timeLeft = config.work; flowSeconds = 0; sessionStartTime = null; phaseText.innerText = "Focus"; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`; updateDisplay(); }
 
-        function updateDisplay() {
-            let totalSeconds = isFlowMode ? flowSeconds : timeLeft;
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-            const s = (totalSeconds % 60).toString().padStart(2, '0');
-            
-            const formattedTime = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
-            timeDisplay.innerText = formattedTime; 
-            document.title = `${formattedTime} - ${isFlowMode ? 'Flow' : 'Focus'}`;
-        }
+        function updateDisplay() { let total = isFlowMode ? flowSeconds : timeLeft; const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60).toString().padStart(2, '0'), s = (total % 60).toString().padStart(2, '0'); timeDisplay.innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`; document.title = `${timeDisplay.innerText} - ${isFlowMode ? 'Flow' : 'Focus'}`; }
 
-        // --- Particles Engine ---
         function startParticles() {
-            clearInterval(particleInterval);
-            const theme = document.documentElement.getAttribute('data-color');
-            let freq = (theme === 'cyberpunk' || isFlowMode) ? 250 : 600; 
-            
+            clearInterval(particleInterval); let freq = isFlowMode ? 250 : 500; 
             particleInterval = setInterval(() => {
                 if (document.hidden || activeParticlesCount >= MAX_PARTICLES) return;
-                
-                const p = document.createElement('div');
-                p.classList.add('particle');
-                p.style.left = Math.random() * 100 + 'vw';
-                activeParticlesCount++;
-                
-                const duration = Math.random() * 3 + 4;
-
-                if (isFlowMode) {
-                    p.style.width = Math.random() * 5 + 3 + 'px'; p.style.height = p.style.width;
-                    p.style.background = '#00d2d3'; p.style.borderRadius = '50%'; p.style.boxShadow = '0 0 12px #00d2d3';
-                    p.style.animation = `driftUp ${duration - 1}s ease-in forwards`;
-                } else {
-                    switch(theme) {
-                        case 'tomato':
-                            p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = p.style.width;
-                            p.style.background = '#ff4757'; p.style.borderRadius = '50%';
-                            p.style.animation = `driftUp ${duration}s ease-in forwards`;
-                            break;
-                        case 'sunset':
-                            p.style.width = Math.random() * 6 + 3 + 'px'; p.style.height = p.style.width;
-                            p.style.background = '#ff9f43'; p.style.borderRadius = '50%'; p.style.boxShadow = '0 0 8px #ff9f43';
-                            p.style.animation = `driftUp ${duration}s ease-in forwards`;
-                            break;
-                        case 'sakura':
-                            p.style.width = '14px'; p.style.height = '14px';
-                            p.style.background = '#ff9ff3'; p.style.borderRadius = '50% 0 50% 50%';
-                            p.style.animation = `leafFall ${duration + 1}s linear forwards`;
-                            break;
-                        case 'ocean':
-                            p.style.width = Math.random() * 10 + 5 + 'px'; p.style.height = p.style.width;
-                            p.style.border = '2px solid #0abde3'; p.style.borderRadius = '50%'; p.style.background = 'transparent';
-                            p.style.animation = `bubbleRise ${duration - 1}s ease-in forwards`;
-                            break;
-                        case 'cyberpunk':
-                            p.style.width = '2px'; p.style.height = Math.random() * 40 + 15 + 'px';
-                            p.style.background = '#00d2d3'; p.style.boxShadow = '0 0 10px #00d2d3';
-                            p.style.animation = `driftDown ${duration - 2}s linear forwards`;
-                            break;
-                        case 'monochrome':
-                            p.style.width = '10px'; p.style.height = '10px';
-                            p.style.background = '#8395a7';
-                            p.style.animation = `spinDrift ${duration}s linear forwards`;
-                            break;
-                    }
-                }
-                particlesContainer.appendChild(p);
-                setTimeout(() => { p.remove(); activeParticlesCount--; }, duration * 1000);
+                const p = document.createElement('div'); p.classList.add('particle'); p.style.left = Math.random() * 100 + 'vw'; activeParticlesCount++;
+                const duration = Math.random() * 3 + 4; p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = p.style.width; p.style.background = currentPrimaryColor; p.style.borderRadius = '50%'; 
+                if (isFlowMode) p.style.animation = `driftUp ${duration - 1}s ease-in forwards`; else p.style.animation = `driftUp ${duration}s ease-in forwards`; particlesContainer.appendChild(p); setTimeout(() => { p.remove(); activeParticlesCount--; }, duration * 1000);
             }, freq);
         }
         function stopParticles() { clearInterval(particleInterval); particlesContainer.innerHTML = ''; activeParticlesCount = 0; }
 
-        // --- NEW: Data Management (Export/Import/Edit) ---
+        // --- Stats ---
         function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-
-        function saveSession(task, duration, startTime) {
-            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday();
-            if(!data[today]) data[today] = { totalMins: 0, sessions: [] };
-            data[today].totalMins += duration;
-            data[today].sessions.unshift({ name: task, duration: duration, time: startTime || new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}) });
-            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
-        }
-
-        // Add Manual Session
-        function addManualSession() {
-            let targetDate = document.getElementById('dateSelector').value || getToday();
-            let taskName = prompt("اسم المهمة / المشروع:", "جلسة مسجلة يدوياً");
-            if (!taskName) return;
-            let durationStr = prompt("مدة الجلسة بالدقائق:", "25");
-            let duration = parseInt(durationStr);
-            if (isNaN(duration) || duration <= 0) return alert("مدة غير صالحة!");
-
-            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
-            if(!data[targetDate]) data[targetDate] = { totalMins: 0, sessions: [] };
-            
-            data[targetDate].totalMins += duration;
-            data[targetDate].sessions.unshift({
-                name: taskName,
-                duration: duration,
-                time: new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})
-            });
-            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
-            loadFullStats();
-        }
-
-        // Edit Session
-        function editSession(dateStr, index) {
-            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced'));
-            let session = data[dateStr].sessions[index];
-            
-            let newName = prompt("تعديل اسم المهمة:", session.name);
-            if (newName === null) return;
-            let newDurStr = prompt("تعديل المدة بالدقائق:", session.duration);
-            let newDur = parseInt(newDurStr);
-            if (isNaN(newDur) || newDur < 0) return alert("مدة غير صالحة!");
-
-            data[dateStr].totalMins -= session.duration; // Remove old
-            session.name = newName;
-            session.duration = newDur;
-            data[dateStr].totalMins += newDur; // Add new
-            
-            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
-            loadFullStats();
-        }
-
-        // Delete Session
-        function deleteSession(dateStr, index) {
-            if(!confirm("هل أنت متأكد من حذف هذه الجلسة؟ 🗑️")) return;
-            let data = JSON.parse(localStorage.getItem('pomoDataAdvanced'));
-            
-            data[dateStr].totalMins -= data[dateStr].sessions[index].duration;
-            data[dateStr].sessions.splice(index, 1);
-            
-            if(data[dateStr].sessions.length === 0) delete data[dateStr]; // Clean up empty days
-            
-            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data));
-            loadFullStats();
-        }
-
-        // Export Data
-        function exportData() {
-            const data = localStorage.getItem('pomoDataAdvanced') || '{}';
-            const blob = new Blob([data], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'pomodoro_backup.json';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // Import Data
-        function importData(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedJson = JSON.parse(e.target.result);
-                    localStorage.setItem('pomoDataAdvanced', JSON.stringify(importedJson));
-                    alert('تم استيراد البيانات بنجاح! 🎉');
-                    if(document.getElementById('statsModal').classList.contains('active')) loadFullStats();
-                } catch(err) {
-                    alert('عفواً، الملف غير صالح! ❌');
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = ''; // Reset input
-        }
-
-        // --- UI Rendering ---
+        function saveSession(task, dur, startT) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday(); if(!data[today]) data[today] = { totalMins: 0, sessions: [] }; data[today].totalMins += dur; data[today].sessions.unshift({ name: task, duration: dur, time: startT || new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) }); localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
+        function addManualSession() { let targetDate = document.getElementById('dateSelector').value || getToday(); let taskName = prompt("Task Name:", "Manual Session"); if (!taskName) return; let duration = parseInt(prompt("Duration (mins):", "25")); if (isNaN(duration) || duration <= 0) return alert("Invalid duration!"); saveSession(taskName, duration, new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})); }
+        function editSession(dateStr, idx) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); let s = data[dateStr].sessions[idx]; let newName = prompt("Edit Task Name:", s.name); if (newName === null) return; let newDur = parseInt(prompt("Edit Duration (mins):", s.duration)); if (isNaN(newDur) || newDur < 0) return alert("Invalid duration!"); data[dateStr].totalMins += (newDur - s.duration); s.name = newName; s.duration = newDur; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
+        function deleteSession(dateStr, idx) { if(!confirm("Delete this session?")) return; let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); data[dateStr].totalMins -= data[dateStr].sessions[idx].duration; data[dateStr].sessions.splice(idx, 1); if(data[dateStr].sessions.length === 0) delete data[dateStr]; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
+        function exportData() { const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timeline: localStorage.getItem('timelineBlocksData'), colors: localStorage.getItem('recentTimelineColors') }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function importData(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const imported = JSON.parse(evt.target.result); if(imported.pomo) localStorage.setItem('pomoDataAdvanced', imported.pomo); if(imported.timeline) { blocksData = JSON.parse(imported.timeline); saveTimelineToLocal(); renderTimelineBlocks(); updateTimelineStats(); } if(imported.colors) { recentTimelineColors = JSON.parse(imported.colors); renderTimelineSwatches(); } alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); } catch(err) { alert('Invalid file format!'); } }; reader.readAsText(file); e.target.value = ''; }
+        
         function loadFullStats() {
-            const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
-            const selector = document.getElementById('dateSelector'); selector.innerHTML = '';
-            const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
-            
-            if(dates.length === 0) {
-                selector.innerHTML = `<option value="${getToday()}">اليوم (${getToday()})</option>`;
-                document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem;">لا توجد بيانات مسجلة، ابدأ التركيز الآن! أو أضف جلسة يدوية.</div>';
-                updateChart({}, []); return;
-            }
-
-            dates.forEach(dateStr => {
-                const opt = document.createElement('option'); opt.value = dateStr;
-                opt.innerText = new Date(dateStr).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                selector.appendChild(opt);
-            });
-            renderDayDetails(); updateChart(data, dates.slice(0, 7).reverse()); 
+            const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const sel = document.getElementById('dateSelector'); sel.innerHTML = ''; const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
+            if(dates.length === 0) { sel.innerHTML = `<option value="${getToday()}">Today (${getToday()})</option>`; document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem;">No data recorded yet.</div>'; updateChart({}, []); return; }
+            dates.forEach(d => { const o = document.createElement('option'); o.value = d; o.innerText = new Date(d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); sel.appendChild(o); }); renderDayDetails(); updateChart(data, dates.slice(0, 7).reverse()); 
         }
 
         function renderDayDetails() {
-            const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {};
-            const selectedDate = document.getElementById('dateSelector').value;
-            const list = document.getElementById('sessionsList'); list.innerHTML = '';
-            
-            if(!data[selectedDate]) return;
+            const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}, d = document.getElementById('dateSelector').value; const list = document.getElementById('sessionsList'); list.innerHTML = ''; if(!data[d]) return;
+            list.innerHTML = `<div style="margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); font-size: 1.1rem; font-weight: bold;">Total Focus: <span style="color: var(--primary); font-weight:800; font-size:1.3rem;">${data[d].totalMins}</span> min</div>`;
+            data[d].sessions.forEach((s, i) => { list.innerHTML += `<div class="session-item"><div class="s-info"><div class="s-name" dir="auto">${s.name}</div><div class="s-meta">${s.duration} Min • ${s.time}</div></div><div class="s-actions"><button class="icon-btn" onclick="editSession('${d}', ${i})"><svg class="icon"><use href="#icon-edit"></use></svg></button><button class="icon-btn" onclick="deleteSession('${d}', ${i})"><svg class="icon"><use href="#icon-delete"></use></svg></button></div></div>`; });
+        }
 
-            const summaryDiv = document.createElement('div');
-            summaryDiv.style.marginBottom = '1rem'; summaryDiv.style.paddingBottom = '0.8rem'; summaryDiv.style.borderBottom = '1px solid var(--border-color)';
-            summaryDiv.innerHTML = `<div style="font-size: 1.1rem; font-weight: bold;">إجمالي التركيز: <span style="color: var(--primary); font-family: Outfit; font-size:1.3rem;">${data[selectedDate].totalMins}</span> دقيقة</div>`;
-            list.appendChild(summaryDiv);
+        function initChart() { const ctx = document.getElementById('mainChart').getContext('2d'); myChart = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [{ label: 'Minutes', data: [], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.1)' }, border: {display: false} }, x: { grid: { display: false }, border: {display: false} } }, plugins: { legend: { display: false } } } }); }
+        function updateChart(data, rDates) { Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#888'; Chart.defaults.font.family = 'Outfit'; const lbls = [], cData = []; rDates.forEach(d => { lbls.push(new Date(d).toLocaleDateString('en-US', { weekday: 'short' })); cData.push(data[d].totalMins); }); myChart.data.labels = lbls; myChart.data.datasets[0].data = cData; myChart.data.datasets[0].backgroundColor = currentPrimaryColor; myChart.update(); }
 
-            data[selectedDate].sessions.forEach((s, index) => {
-                const item = document.createElement('div'); item.className = 'session-item';
-                item.innerHTML = `
-                    <div class="s-info">
-                        <div class="s-name">${s.name}</div>
-                        <div class="s-meta">${s.duration} Min • ${s.time}</div>
-                    </div>
-                    <div class="s-actions">
-                        <button class="icon-btn" onclick="editSession('${selectedDate}', ${index})" title="تعديل">✏️</button>
-                        <button class="icon-btn" onclick="deleteSession('${selectedDate}', ${index})" title="حذف">❌</button>
-                    </div>
-                `;
-                list.appendChild(item);
+        // --- Timeline & Real-Time Live Sync ---
+        function renderTimelineSwatches() {
+            timelineSwatches.innerHTML = ''; blockColorInput.value = selectedBlockColor;
+            recentTimelineColors.forEach(color => {
+                const swatch = document.createElement('div'); swatch.className = `ts-swatch ${color === selectedBlockColor ? 'active' : ''}`;
+                swatch.style.backgroundColor = color;
+                swatch.onclick = () => { selectedBlockColor = color; blockColorInput.value = color; renderTimelineSwatches(); liveUpdate(); };
+                timelineSwatches.appendChild(swatch);
             });
         }
 
-        function initChart() {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'دقائق', data: [], borderRadius: 6 }] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.1)' }, border: {display: false} }, x: { grid: { display: false }, border: {display: false} } },
-                    plugins: { legend: { display: false } }
+        function formatTime(h, b) {
+            const period = h >= 12 ? 'PM' : 'AM'; const dHour = h % 12 === 0 ? 12 : h % 12;
+            const sMin = (b * 5).toString().padStart(2, '0'); const eMin = ((b + 1) * 5);
+            let eDHour = dHour, ePeriod = period, fEMin = eMin.toString().padStart(2, '0');
+            if (eMin === 60) { fEMin = '00'; const nH = h + 1; ePeriod = nH >= 12 && nH < 24 ? 'PM' : 'AM'; eDHour = nH % 12 === 0 ? 12 : nH % 12; }
+            return `${dHour}:${sMin} ${period} - ${eDHour}:${fEMin} ${ePeriod}`;
+        }
+
+        function initTimeline() {
+            const saved = JSON.parse(localStorage.getItem('timelineBlocksData')); let isLoaded = saved && saved.length === (TOTAL_HOURS * BLOCKS_PER_HOUR);
+            for (let h = 0; h < TOTAL_HOURS; h++) {
+                const row = document.createElement('div'); row.className = 'hour-row';
+                const label = document.createElement('div'); label.className = 'hour-label'; label.textContent = `${h % 12 === 0 ? 12 : h % 12} ${h >= 12 ? 'PM' : 'AM'}`; row.appendChild(label);
+                const grid = document.createElement('div'); grid.className = 'blocks-grid';
+                for (let b = 0; b < BLOCKS_PER_HOUR; b++) {
+                    const gIdx = (h * BLOCKS_PER_HOUR) + b;
+                    if (!isLoaded) blocksData.push({ type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' }); else blocksData = saved;
+                    const block = document.createElement('div'); block.className = 'time-block'; block.dataset.index = gIdx; block.dataset.tooltip = formatTime(h, b);
+                    block.addEventListener('mousedown', (e) => handleMouseDown(e, gIdx)); block.addEventListener('mouseenter', (e) => handleMouseEnter(e, gIdx));
+                    grid.appendChild(block);
+                }
+                row.appendChild(grid); timeline.appendChild(row);
+            }
+            renderTimelineBlocks(); updateTimelineStats();
+        }
+
+        function saveTimelineStateToHistory() { historyStack.push(JSON.stringify(blocksData)); if (historyStack.length > 20) historyStack.shift(); btnUndo.disabled = historyStack.length === 0; }
+        function saveTimelineToLocal() { localStorage.setItem('timelineBlocksData', JSON.stringify(blocksData)); }
+
+        btnUndo.addEventListener('click', () => { if (historyStack.length === 0) return; blocksData = JSON.parse(historyStack.pop()); btnUndo.disabled = historyStack.length === 0; renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); });
+
+        function handleMouseDown(e, index) {
+            // Block triggering if they actually clicked the [ + | x ] adjuster buttons
+            if (e.target.closest('.block-adjuster')) return;
+
+            const target = blocksData[index]; isDragging = true;
+            
+            // If already editing, and user clicks an existing selected block, 
+            // DO NOT delete it! Just let them drag to paint more if they want.
+            if (actionPanel.classList.contains('visible') && currentSelection.has(index)) {
+                paintMode = 'add'; 
+                return; 
+            }
+
+            // Initiate Editing on an existing Task
+            if (!actionPanel.classList.contains('visible') && target.type !== 'blank') {
+                backupBlocksSnapshot = JSON.stringify(blocksData); 
+
+                let s = index, end = index;
+                // Highlight connected Work blocks
+                while (s > 0 && blocksData[s - 1].title === target.title && blocksData[s - 1].type === target.type) s--;
+                while (end < blocksData.length - 1 && blocksData[end + 1].title === target.title && blocksData[end + 1].type === target.type) end++;
+                
+                let restEnd = end;
+                if (target.type === 'work') {
+                    while (restEnd < blocksData.length - 1 && blocksData[restEnd + 1].type === 'rest') restEnd++;
+                }
+
+                currentSelection.clear(); editingOriginalIndices = [];
+                for (let i = s; i <= end; i++) { currentSelection.add(i); }
+                for (let i = s; i <= restEnd; i++) { editingOriginalIndices.push(i); }
+                
+                timelineTaskInput.value = target.title === 'Rest' ? '' : target.title;
+                if (target.color === 'theme') { autoThemeToggle.checked = true; manualColorGroup.style.opacity = '0.3'; manualColorGroup.style.pointerEvents = 'none'; } 
+                else if (target.type === 'work') { autoThemeToggle.checked = false; manualColorGroup.style.opacity = '1'; manualColorGroup.style.pointerEvents = 'auto'; selectedBlockColor = target.color; renderTimelineSwatches(); }
+                textColorInput.value = target.textColor || '#ffffff';
+                
+                updateDOMSelection();
+                showPanel(); paintMode = 'add'; 
+                liveUpdate(); // Render immediately
+                return;
+            }
+
+            // Normal Drag Selection Setup
+            if (!actionPanel.classList.contains('visible')) {
+                backupBlocksSnapshot = JSON.stringify(blocksData);
+            }
+            if (currentSelection.has(index)) { paintMode = 'remove'; currentSelection.delete(index); } else { paintMode = 'add'; currentSelection.add(index); }
+            
+            updateDOMSelection();
+            if (actionPanel.classList.contains('visible')) liveUpdate();
+        }
+
+        function handleMouseEnter(e, index) {
+            if (isDragging) { 
+                if (paintMode === 'add') currentSelection.add(index); else if (paintMode === 'remove') currentSelection.delete(index); 
+                updateDOMSelection(); 
+                if (actionPanel.classList.contains('visible')) liveUpdate(); 
+            }
+        }
+
+        function clearSelection() { currentSelection.clear(); editingOriginalIndices = []; updateDOMSelection(); hidePanel(); }
+        
+        function updateDOMSelection() { 
+            // 1. Remove old adjusters first
+            document.querySelectorAll('.block-adjuster').forEach(el => el.remove());
+            
+            // 2. Mark selected blocks visually
+            document.querySelectorAll('.time-block').forEach(el => { 
+                el.classList.toggle('selected', currentSelection.has(parseInt(el.dataset.index))); 
+            }); 
+            selectionCount.innerText = `${currentSelection.size} selected`;
+        }
+
+        // Dedicated function to render the popup controls precisely so it survives the live DOM wipes
+        function renderAdjuster() {
+            document.querySelectorAll('.block-adjuster').forEach(el => el.remove());
+            
+            if (currentSelection.size > 0 && actionPanel.classList.contains('visible')) {
+                const maxIdx = Math.max(...Array.from(currentSelection));
+                const maxEl = document.querySelector(`.time-block[data-index="${maxIdx}"]`);
+                if (maxEl) {
+                    const adj = document.createElement('div'); adj.className = 'block-adjuster';
+                    adj.onmousedown = (e) => e.stopPropagation(); // safety catch
+                    
+                    const btnMinus = document.createElement('div'); btnMinus.className = 'adj-btn minus'; btnMinus.innerHTML = '×';
+                    btnMinus.onmousedown = (e) => {
+                        e.stopPropagation();
+                        if (currentSelection.size > 1) {
+                            currentSelection.delete(maxIdx); 
+                            updateDOMSelection(); 
+                            liveUpdate();
+                        }
+                    };
+                    
+                    const btnPlus = document.createElement('div'); btnPlus.className = 'adj-btn plus'; btnPlus.innerHTML = '+';
+                    btnPlus.onmousedown = (e) => {
+                        e.stopPropagation();
+                        if (maxIdx < (TOTAL_HOURS * BLOCKS_PER_HOUR) - 1 && !currentSelection.has(maxIdx + 1)) {
+                            currentSelection.add(maxIdx + 1); 
+                            updateDOMSelection(); 
+                            liveUpdate();
+                        }
+                    };
+                    
+                    adj.appendChild(btnMinus); adj.appendChild(btnPlus); maxEl.appendChild(adj);
+                }
+            }
+        }
+
+        window.addEventListener('mouseup', () => { 
+            if (isDragging) { 
+                isDragging = false; 
+                if (currentSelection.size > 0) { showPanel(); liveUpdate(); }
+                if (currentSelection.size === 0 && actionPanel.classList.contains('visible')) hidePanel(); 
+            } 
+        });
+
+        function showPanel() { actionPanel.classList.add('visible'); timelineTaskInput.focus(); }
+        function hidePanel() { actionPanel.classList.remove('visible'); timelineTaskInput.value = ''; backupBlocksSnapshot = null; }
+
+        function updateTimelineStats() {
+            let w = 0, r = 0; blocksData.forEach(b => { if (b.type === 'work') w += 5; if (b.type === 'rest') r += 5; });
+            statWork.textContent = w; statRest.textContent = r;
+        }
+
+        // Live Mapping Engine
+        function liveUpdate() {
+            if (!actionPanel.classList.contains('visible') || currentSelection.size === 0 || !backupBlocksSnapshot) return;
+
+            // 1. Restore fresh from snapshot
+            blocksData = JSON.parse(backupBlocksSnapshot);
+
+            // 2. Erase the original footprint of the task being edited
+            if (editingOriginalIndices.length > 0) {
+                editingOriginalIndices.forEach(idx => { blocksData[idx] = { type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' }; });
+            }
+
+            // 3. Map new selected data
+            const sorted = Array.from(currentSelection).sort((a, b) => a - b);
+            let title = timelineTaskInput.value.trim() || 'Task';
+            let isArabic = /[\u0600-\u06FF]/.test(title);
+            let words = title.split(/\s+/).filter(w => w.length > 0);
+            if(isArabic) words.reverse();
+
+            const cText = textColorInput.value;
+            const cRest = restColorInput.value;
+            const chosenBlockColor = autoThemeToggle.checked ? 'theme' : selectedBlockColor;
+
+            sorted.forEach((idx, i) => {
+                let disp = '-'; 
+                if (i < words.length) { 
+                    disp = words[i]; 
+                    if (i === sorted.length - 1 && words.length > sorted.length) { 
+                        let rem = words.slice(i); 
+                        if(isArabic) rem.reverse(); 
+                        disp = rem.join(' '); 
+                    } 
+                } 
+                blocksData[idx] = { type: 'work', title: title, color: chosenBlockColor, textColor: cText, displayWord: disp };
+            });
+
+            // 4. Map Auto Rest dynamically linked to the end
+            if (autoRestToggle.checked) {
+                const last = sorted[sorted.length - 1];
+                const limit = parseInt(restDurationSelect.value, 10);
+                for (let i = 1; i <= limit; i++) { 
+                    const rIdx = last + i; 
+                    if (rIdx < blocksData.length && !currentSelection.has(rIdx)) {
+                        blocksData[rIdx] = { type: 'rest', title: 'Rest', color: cRest, textColor: cText, displayWord: 'Rest' }; 
+                    }
+                }
+            }
+
+            renderTimelineBlocks();
+            updateTimelineStats();
+            
+            // Re-mount the adjuster immediately after blocks wipe/redraw
+            renderAdjuster();
+        }
+
+        function renderTimelineBlocks() {
+            document.querySelectorAll('.time-block').forEach(el => {
+                const idx = parseInt(el.dataset.index), data = blocksData[idx];
+                el.className = 'time-block'; el.style.backgroundColor = ''; el.innerHTML = ''; 
+                if (currentSelection.has(idx)) el.classList.add('selected'); // Maintain highlighting visually
+
+                if (data.type === 'work' || data.type === 'rest') {
+                    el.classList.add(data.type); 
+                    el.style.backgroundColor = data.color === 'theme' ? currentPrimaryColor : data.color; 
+                    el.dataset.tooltip = `${formatTime(Math.floor(idx/12), idx%12)} | ${data.title}`;
+                    if (data.displayWord) { const s = document.createElement('span'); s.className = 'block-title'; s.textContent = data.displayWord; s.style.color = data.textColor || '#ffffff'; el.appendChild(s); }
+                } else {
+                    el.dataset.tooltip = formatTime(Math.floor(idx/12), idx%12);
                 }
             });
         }
 
-        function updateChart(data, recentDates) {
-            const primaryColor = getComputedStyle(document.body).getPropertyValue('--primary').trim() || '#ff4757';
-            Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#868e96';
-            Chart.defaults.font.family = 'Tajawal';
+        // Action Panel Buttons
+        btnSave.addEventListener('click', () => { 
+            saveTimelineStateToHistory();
+            saveTimelineToLocal();
+            editingOriginalIndices = []; 
+            clearSelection(); 
+        });
 
-            const labels = []; const chartData = [];
-            recentDates.forEach(d => { labels.push(new Date(d).toLocaleDateString('ar-EG', { weekday: 'short' })); chartData.push(data[d].totalMins); });
+        btnCancel.addEventListener('click', () => {
+            if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot);
+            renderTimelineBlocks();
+            updateTimelineStats();
+            editingOriginalIndices = []; 
+            clearSelection();
+        });
+
+        btnClear.addEventListener('click', () => {
+            if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); // Revert first
+            saveTimelineStateToHistory();
             
-            myChart.data.labels = labels; myChart.data.datasets[0].data = chartData; myChart.data.datasets[0].backgroundColor = primaryColor;
-            myChart.update();
-        }
+            if (editingOriginalIndices.length > 0) {
+                editingOriginalIndices.forEach(idx => blocksData[idx] = { type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' });
+            }
+            currentSelection.forEach(idx => blocksData[idx] = { type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' });
+            
+            editingOriginalIndices = []; clearSelection(); renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal();
+        });
+
+        btnClearAll.addEventListener('click', () => {
+            if(confirm('Clear all blocks for the day?')) {
+                saveTimelineStateToHistory(); blocksData = blocksData.map(() => ({ type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' }));
+                renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal();
+            }
+        });
+
+        timelineTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') btnSave.click(); });
+        
+        btnExport.addEventListener('click', () => {
+            document.body.classList.add('exporting'); clearSelection();
+            html2canvas(timeline, { backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-color'), scale: 2 }).then(canvas => {
+                document.body.classList.remove('exporting'); const link = document.createElement('a'); link.download = `time-blocks-${new Date().toISOString().split('T')[0]}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        });
+
     </script>
 </body>
 </html>
