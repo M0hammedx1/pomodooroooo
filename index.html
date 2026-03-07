@@ -72,7 +72,7 @@
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; transition: var(--transition); }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        input[type="text"], input[type="number"], select { user-select: auto; font-family: 'Outfit', 'Tajawal', sans-serif; }
+        input[type="text"], input[type="number"], select, textarea { user-select: auto; font-family: 'Outfit', 'Tajawal', sans-serif; }
 
         /* Particles */
         #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -142,7 +142,11 @@
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s, transform 0.2s; z-index: 10; }
         .close-btn:hover { color: var(--primary); transform: rotate(90deg); }
-        .modal-title { font-size: clamp(1.2rem, 3vw, 1.5rem); margin-bottom: 1.5rem; color: var(--text-main); font-weight: 700; transition: color 0.3s; }
+        .modal-title { font-size: clamp(1.2rem, 3vw, 1.5rem); margin-bottom: 1.5rem; color: var(--text-main); font-weight: 700; transition: color 0.3s; display: flex; align-items: center; gap: 8px; }
+
+        /* Notes Textarea */
+        .notes-textarea { flex: 1; width: 100%; border: 2px solid var(--border-color); border-radius: 16px; padding: 1.5rem; background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; resize: none; outline: none; transition: var(--transition); line-height: 1.6; }
+        .notes-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
 
         /* Settings Layout */
         .settings-modal { max-width: 500px; max-height: 90vh; overflow-y: auto; }
@@ -324,6 +328,7 @@
         <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></symbol>
         <symbol id="icon-amoled" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20V4c4.41 0 8 3.59 8 8s-3.59 8-8 8z"/></symbol>
         <symbol id="icon-paint" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34c-.39-.39-1.02-.39-1.41 0L9 12.25 11.75 15l8.96-8.96c.39-.39.39-1.02 0-1.41z"/></symbol>
+        <symbol id="icon-notes" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>
     </svg>
 
     <div id="particles"></div>
@@ -364,6 +369,9 @@
             </div>
 
             <div class="bottom-links">
+                <button class="link-btn" onclick="openModal('notesModal')">
+                    <svg class="icon-sm"><use href="#icon-notes"></use></svg> Notes
+                </button>
                 <button class="link-btn" onclick="openModal('settingsModal')">
                     <svg class="icon-sm"><use href="#icon-settings"></use></svg> Settings
                 </button>
@@ -473,6 +481,14 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="notesModal">
+        <div class="modal-content settings-modal" style="display: flex; flex-direction: column; height: 80vh; max-width: 800px;">
+            <button class="close-btn" onclick="closeModal('notesModal')"><svg class="icon-lg"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title"><svg class="icon" style="color: var(--primary);"><use href="#icon-notes"></use></svg> Notes</h2>
+            <textarea id="appNotes" class="notes-textarea" dir="auto" placeholder="Write your thoughts, tasks, or daily plans here..."></textarea>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content settings-modal">
             <button class="close-btn" onclick="closeModal('settingsModal')"><svg class="icon-lg"><use href="#icon-close"></use></svg></button>
@@ -550,6 +566,10 @@
         let recentTimelineColors = JSON.parse(localStorage.getItem('recentTimelineColors')) || ['#3b82f6', '#8b5cf6', '#f97316', '#14b8a6', '#eab308'];
         let selectedBlockColor = recentTimelineColors[0];
         
+        // Advanced Drag Fix Trackers
+        let lastDragIndex = -1; 
+        let activeDragHour = -1; 
+        
         // Live Edit Snapshot Backup
         let backupBlocksSnapshot = null;
 
@@ -573,6 +593,13 @@
             applyPrimaryColor(currentPrimaryColor);
             renderTimelineSwatches();
             loadSavedConfig(); updateDisplay(); initChart(); initTimeline();
+
+            // Notes initialization
+            const notesTextarea = document.getElementById('appNotes');
+            notesTextarea.value = localStorage.getItem('pomoNotes') || '';
+            notesTextarea.addEventListener('input', (e) => {
+                localStorage.setItem('pomoNotes', e.target.value);
+            });
 
             // Setup Theme vs Custom Color UI State
             autoThemeToggle.addEventListener('change', (e) => {
@@ -713,8 +740,8 @@
         function addManualSession() { let targetDate = document.getElementById('dateSelector').value || getToday(); let taskName = prompt("Task Name:", "Manual Session"); if (!taskName) return; let duration = parseInt(prompt("Duration (mins):", "25")); if (isNaN(duration) || duration <= 0) return alert("Invalid duration!"); saveSession(taskName, duration, new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})); }
         function editSession(dateStr, idx) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); let s = data[dateStr].sessions[idx]; let newName = prompt("Edit Task Name:", s.name); if (newName === null) return; let newDur = parseInt(prompt("Edit Duration (mins):", s.duration)); if (isNaN(newDur) || newDur < 0) return alert("Invalid duration!"); data[dateStr].totalMins += (newDur - s.duration); s.name = newName; s.duration = newDur; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
         function deleteSession(dateStr, idx) { if(!confirm("Delete this session?")) return; let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); data[dateStr].totalMins -= data[dateStr].sessions[idx].duration; data[dateStr].sessions.splice(idx, 1); if(data[dateStr].sessions.length === 0) delete data[dateStr]; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
-        function exportData() { const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timeline: localStorage.getItem('timelineBlocksData'), colors: localStorage.getItem('recentTimelineColors') }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-        function importData(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const imported = JSON.parse(evt.target.result); if(imported.pomo) localStorage.setItem('pomoDataAdvanced', imported.pomo); if(imported.timeline) { blocksData = JSON.parse(imported.timeline); saveTimelineToLocal(); renderTimelineBlocks(); updateTimelineStats(); } if(imported.colors) { recentTimelineColors = JSON.parse(imported.colors); renderTimelineSwatches(); } alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); } catch(err) { alert('Invalid file format!'); } }; reader.readAsText(file); e.target.value = ''; }
+        function exportData() { const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timeline: localStorage.getItem('timelineBlocksData'), colors: localStorage.getItem('recentTimelineColors'), notes: localStorage.getItem('pomoNotes') }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function importData(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const imported = JSON.parse(evt.target.result); if(imported.pomo) localStorage.setItem('pomoDataAdvanced', imported.pomo); if(imported.timeline) { blocksData = JSON.parse(imported.timeline); saveTimelineToLocal(); renderTimelineBlocks(); updateTimelineStats(); } if(imported.colors) { recentTimelineColors = JSON.parse(imported.colors); renderTimelineSwatches(); } if(imported.notes) { localStorage.setItem('pomoNotes', imported.notes); document.getElementById('appNotes').value = imported.notes; } alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); } catch(err) { alert('Invalid file format!'); } }; reader.readAsText(file); e.target.value = ''; }
         
         function loadFullStats() {
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const sel = document.getElementById('dateSelector'); sel.innerHTML = ''; const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
@@ -774,24 +801,21 @@
         btnUndo.addEventListener('click', () => { if (historyStack.length === 0) return; blocksData = JSON.parse(historyStack.pop()); btnUndo.disabled = historyStack.length === 0; renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); });
 
         function handleMouseDown(e, index) {
-            // Block triggering if they actually clicked the [ + | x ] adjuster buttons
             if (e.target.closest('.block-adjuster')) return;
 
             const target = blocksData[index]; isDragging = true;
             
-            // If already editing, and user clicks an existing selected block, 
-            // DO NOT delete it! Just let them drag to paint more if they want.
             if (actionPanel.classList.contains('visible') && currentSelection.has(index)) {
                 paintMode = 'add'; 
+                lastDragIndex = index; 
+                activeDragHour = Math.floor(index / 12);
                 return; 
             }
 
-            // Initiate Editing on an existing Task
             if (!actionPanel.classList.contains('visible') && target.type !== 'blank') {
                 backupBlocksSnapshot = JSON.stringify(blocksData); 
 
                 let s = index, end = index;
-                // Highlight connected Work blocks
                 while (s > 0 && blocksData[s - 1].title === target.title && blocksData[s - 1].type === target.type) s--;
                 while (end < blocksData.length - 1 && blocksData[end + 1].title === target.title && blocksData[end + 1].type === target.type) end++;
                 
@@ -811,23 +835,48 @@
                 
                 updateDOMSelection();
                 showPanel(); paintMode = 'add'; 
-                liveUpdate(); // Render immediately
+                lastDragIndex = index; 
+                activeDragHour = Math.floor(index / 12);
+                liveUpdate(); 
                 return;
             }
 
-            // Normal Drag Selection Setup
             if (!actionPanel.classList.contains('visible')) {
                 backupBlocksSnapshot = JSON.stringify(blocksData);
             }
             if (currentSelection.has(index)) { paintMode = 'remove'; currentSelection.delete(index); } else { paintMode = 'add'; currentSelection.add(index); }
             
+            lastDragIndex = index; 
+            activeDragHour = Math.floor(index / 12);
             updateDOMSelection();
             if (actionPanel.classList.contains('visible')) liveUpdate();
         }
 
         function handleMouseEnter(e, index) {
             if (isDragging) { 
-                if (paintMode === 'add') currentSelection.add(index); else if (paintMode === 'remove') currentSelection.delete(index); 
+                const currentHour = Math.floor(index / 12);
+
+                if (currentHour !== activeDragHour) {
+                    // Strict Gatekeeper: Force the user to touch the start/end of the row when crossing hours.
+                    if (currentHour > activeDragHour && index % 12 === 0) {
+                        activeDragHour = currentHour;
+                    } else if (currentHour < activeDragHour && index % 12 === 11) {
+                        activeDragHour = currentHour;
+                    } else {
+                        // Ignore the hover entirely until they physically guide the mouse to the first block!
+                        return; 
+                    }
+                }
+
+                let start = Math.min(lastDragIndex, index);
+                let end = Math.max(lastDragIndex, index);
+                
+                for(let i = start; i <= end; i++) {
+                    if (paintMode === 'add') currentSelection.add(i); 
+                    else if (paintMode === 'remove') currentSelection.delete(i); 
+                }
+                lastDragIndex = index; 
+                
                 updateDOMSelection(); 
                 if (actionPanel.classList.contains('visible')) liveUpdate(); 
             }
@@ -836,17 +885,14 @@
         function clearSelection() { currentSelection.clear(); editingOriginalIndices = []; updateDOMSelection(); hidePanel(); }
         
         function updateDOMSelection() { 
-            // 1. Remove old adjusters first
             document.querySelectorAll('.block-adjuster').forEach(el => el.remove());
             
-            // 2. Mark selected blocks visually
             document.querySelectorAll('.time-block').forEach(el => { 
                 el.classList.toggle('selected', currentSelection.has(parseInt(el.dataset.index))); 
             }); 
             selectionCount.innerText = `${currentSelection.size} selected`;
         }
 
-        // Dedicated function to render the popup controls precisely so it survives the live DOM wipes
         function renderAdjuster() {
             document.querySelectorAll('.block-adjuster').forEach(el => el.remove());
             
@@ -855,7 +901,7 @@
                 const maxEl = document.querySelector(`.time-block[data-index="${maxIdx}"]`);
                 if (maxEl) {
                     const adj = document.createElement('div'); adj.className = 'block-adjuster';
-                    adj.onmousedown = (e) => e.stopPropagation(); // safety catch
+                    adj.onmousedown = (e) => e.stopPropagation(); 
                     
                     const btnMinus = document.createElement('div'); btnMinus.className = 'adj-btn minus'; btnMinus.innerHTML = '×';
                     btnMinus.onmousedown = (e) => {
@@ -898,19 +944,15 @@
             statWork.textContent = w; statRest.textContent = r;
         }
 
-        // Live Mapping Engine
         function liveUpdate() {
             if (!actionPanel.classList.contains('visible') || currentSelection.size === 0 || !backupBlocksSnapshot) return;
 
-            // 1. Restore fresh from snapshot
             blocksData = JSON.parse(backupBlocksSnapshot);
 
-            // 2. Erase the original footprint of the task being edited
             if (editingOriginalIndices.length > 0) {
                 editingOriginalIndices.forEach(idx => { blocksData[idx] = { type: 'blank', title: '', color: '', textColor: '#ffffff', displayWord: '' }; });
             }
 
-            // 3. Map new selected data
             const sorted = Array.from(currentSelection).sort((a, b) => a - b);
             let title = timelineTaskInput.value.trim() || 'Task';
             let isArabic = /[\u0600-\u06FF]/.test(title);
@@ -934,7 +976,6 @@
                 blocksData[idx] = { type: 'work', title: title, color: chosenBlockColor, textColor: cText, displayWord: disp };
             });
 
-            // 4. Map Auto Rest dynamically linked to the end
             if (autoRestToggle.checked) {
                 const last = sorted[sorted.length - 1];
                 const limit = parseInt(restDurationSelect.value, 10);
@@ -948,8 +989,6 @@
 
             renderTimelineBlocks();
             updateTimelineStats();
-            
-            // Re-mount the adjuster immediately after blocks wipe/redraw
             renderAdjuster();
         }
 
@@ -957,7 +996,7 @@
             document.querySelectorAll('.time-block').forEach(el => {
                 const idx = parseInt(el.dataset.index), data = blocksData[idx];
                 el.className = 'time-block'; el.style.backgroundColor = ''; el.innerHTML = ''; 
-                if (currentSelection.has(idx)) el.classList.add('selected'); // Maintain highlighting visually
+                if (currentSelection.has(idx)) el.classList.add('selected');
 
                 if (data.type === 'work' || data.type === 'rest') {
                     el.classList.add(data.type); 
@@ -970,7 +1009,6 @@
             });
         }
 
-        // Action Panel Buttons
         btnSave.addEventListener('click', () => { 
             saveTimelineStateToHistory();
             saveTimelineToLocal();
@@ -987,7 +1025,7 @@
         });
 
         btnClear.addEventListener('click', () => {
-            if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); // Revert first
+            if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); 
             saveTimelineStateToHistory();
             
             if (editingOriginalIndices.length > 0) {
