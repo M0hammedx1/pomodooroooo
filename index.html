@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pomodoro Pro: Focus & Timeline</title>
+    <title>Prax: Focus & Timeline</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Outfit:wght@300;400;600;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -19,6 +19,11 @@
             --primary: #ff4757; --primary-glow: rgba(255, 71, 87, 0.3); --primary-transparent: rgba(255, 71, 87, 0.15);
             --rest-color: #10b981; --rest-transparent: rgba(16, 185, 129, 0.15);
             --block-blank: #f1f5f9; --block-blank-hover: #e2e8f0; --selection-border: var(--primary);
+            
+            /* Dynamic Timeline Vars */
+            --block-radius: 6px;
+            --block-gap: 2px;
+            --marker-opacity: 0.05;
         }
 
         [data-theme="dark"] {
@@ -38,7 +43,7 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', 'Tajawal', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden; width: 100%; max-width: 100%; padding: 2rem 1rem calc(180px + env(safe-area-inset-bottom)) 1rem; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', 'Tajawal', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden; width: 100%; max-width: 100%; padding: 2rem 1rem 1rem 1rem; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -57,9 +62,9 @@
         .icon-sm { width: 16px; height: 16px; }
         .icon-lg { width: 24px; height: 24px; }
 
-        .app-wrapper { width: 100%; max-width: 1000px; z-index: 1; display: flex; flex-direction: column; gap: 2rem; position: relative; overflow-x: hidden; }
+        .app-wrapper { width: 100%; max-width: 1000px; z-index: 1; display: flex; flex-direction: column; gap: 2rem; position: relative; overflow-x: hidden; min-height: calc(100vh - 4rem); }
         .app-header { text-align: center; }
-        .app-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin-bottom: -5px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .app-title { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin-bottom: -5px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .app-signature { font-family: 'Dancing Script', cursive; font-size: clamp(1rem, 2.5vw, 1.4rem); color: var(--primary); opacity: 0.9; }
 
         .glass-panel { background: var(--surface-color); padding: clamp(1.5rem, 3vw, 2.5rem); border-radius: 24px; box-shadow: var(--shadow); border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: var(--transition); width: 100%; }
@@ -83,7 +88,6 @@
         .task-input:focus { border-bottom-color: var(--primary); }
         .phase-text { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 4px; font-weight: 700; margin-bottom: 2rem;}
 
-        /* Ultra-Premium Timer Wrapper */
         .timer-display-wrapper { position: relative; padding: 2.5rem 4rem; background: var(--bg-color); border-radius: 28px; overflow: hidden; z-index: 1; min-width: 280px; display: flex; justify-content: center; align-items: center; border: 2px solid var(--border-color); transition: border-color 0.4s, box-shadow 0.4s; box-shadow: inset 0 5px 15px rgba(0,0,0,0.03); }
         .timer-display-wrapper.running { border-color: transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .timer-display-wrapper.running::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(transparent, var(--primary), transparent 25%); animation: rotateGlow 3s linear infinite; z-index: -2; will-change: transform; }
@@ -95,7 +99,6 @@
 
         .timer-display { font-size: clamp(4.5rem, 12vw, 7rem); font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 0; transition: color 0.4s, text-shadow 0.4s; line-height: 1; letter-spacing: -2px;}
         .timer-display-wrapper.running .timer-display { color: var(--primary); text-shadow: 0 0 30px var(--primary-glow); }
-        /* ONLY glow changes in Flow, text remains rock solid */
         .timer-display-wrapper.flow .timer-display { animation: flowPulseText 2.5s infinite alternate ease-in-out; }
 
         .controls { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 2.5rem; width: 100%; }
@@ -111,7 +114,6 @@
         .link-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 700; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
         .link-btn:hover { color: var(--primary); transform: translateY(-2px); }
 
-        /* Modals & Backdrop */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; padding: 1rem; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
         .modal-content { background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 28px; width: 100%; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; transform: translateY(40px) scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -138,11 +140,12 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(22px); background-color: #fff; }
         
+        .vol-slider { flex: 1; max-width: 150px; accent-color: var(--primary); cursor: pointer; }
+        
         .action-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.5rem; }
         .action-btn { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 14px; cursor: pointer; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; transition: var(--transition);}
         .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
 
-        /* Stats & Distractions Modal */
         .stats-modal { max-width: 1100px; height: 85vh; display: flex; flex-direction: column; }
         .stats-content { display: flex; gap: 2rem; flex: 1; min-height: 0; }
         .chart-section { flex: 1.2; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 20px; padding: 1.5rem; min-height: 200px; border: 1px solid var(--border-color);}
@@ -160,22 +163,25 @@
         .s-name { font-weight: 700; color: var(--text-main); font-size: 1.05rem; }
         .s-meta { font-size: 0.85rem; color: var(--text-muted); display: inline-block; background: var(--bg-color); padding: 4px 10px; border-radius: 8px; margin-top: 8px; font-weight: 600; }
         
-        /* Execution Score Banner */
         .exec-score-banner { display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); padding: 1.2rem 1.8rem; border-radius: 20px; border: 1px solid var(--border-color); }
         .exec-info h3 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .exec-info p { font-size: 1.6rem; font-weight: 800; color: var(--text-main); line-height: 1;}
         .exec-circle { width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800; color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: background-color 0.4s;}
         .score-high { background: #10b981; } .score-med { background: #f59e0b; } .score-low { background: #ef4444; }
 
-        /* Timeline Section */
         .timeline-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 2px solid var(--border-color); flex-wrap: wrap; gap: 1rem; }
         .timeline-title { font-size: clamp(1.3rem, 3vw, 1.6rem); font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
         .timeline-tools { display: flex; gap: 0.5rem; }
         .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
         .tool-btn:active { transform: scale(0.92); }
-        .tool-btn:hover { background: var(--border-color); color: var(--text-main); }
+        .tool-btn:hover:not(:disabled) { background: var(--border-color); color: var(--text-main); }
+        .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .timeline-wrapper { position: relative; width: 100%; border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; background: var(--surface-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.02);}
+        .timeline-date-controls { display: flex; gap: 8px; align-items: center; }
+        .timeline-date-controls input[type="date"] { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 10px; outline: none; font-weight: 700; cursor: pointer; transition: var(--transition); font-family: inherit; }
+        .timeline-date-controls input[type="date"]:focus { border-color: var(--primary); }
+
+        .timeline-wrapper { position: relative; width: 100%; border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; background: var(--surface-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.02); transition: opacity 0.3s;}
         .playhead { position: absolute; left: 0; width: 100%; height: 2px; background: var(--primary); z-index: 50; pointer-events: none; box-shadow: 0 0 15px var(--primary-glow); display: none; will-change: top; transition: top 1s linear; }
         .playhead::before { content: ''; position: absolute; left: 0; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
 
@@ -183,11 +189,9 @@
         .hour-row:last-child { border-bottom: none; }
         .hour-label { width: clamp(60px, 12vw, 85px); flex-shrink: 0; padding: 0.5rem 0.2rem; font-size: clamp(0.75rem, 2vw, 0.85rem); font-weight: 700; color: var(--text-muted); border-right: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; text-align: center; background: var(--bg-color); flex-direction: column; line-height: 1.2;}
         
-        /* FIX: Used minmax(0, 1fr) to force equal grid columns regardless of content length */
-        .blocks-grid { flex: 1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; padding: 2px; background: var(--surface-color); align-content: start;}
+        .blocks-grid { flex: 1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--block-gap); padding: var(--block-gap); background: var(--surface-color); align-content: start;}
         
-        /* FIX: Added width: 100% and box-sizing to ensure block respects grid bounds strictly */
-        .time-block { width: 100%; box-sizing: border-box; height: clamp(38px, 8vw, 46px); background-color: var(--block-blank); border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease, border 0.3s, opacity 0.2s; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;}
+        .time-block { width: 100%; box-sizing: border-box; height: clamp(38px, 8vw, 46px); background-color: var(--block-blank); border-radius: var(--block-radius); cursor: pointer; transition: background-color 0.3s ease, border 0.3s, opacity 0.2s; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;}
         .time-block:hover { background-color: var(--block-blank-hover); }
         .time-block.selected { box-shadow: inset 0 0 0 3px var(--selection-border); z-index: 5; opacity: 0.85; }
         
@@ -200,7 +204,6 @@
         .time-block.rest.actual { background-color: var(--rest-color); border-color: var(--rest-color); color: #fff; }
         .time-block.neutral { background-color: var(--border-color); opacity: 0.8; color: var(--text-main); }
 
-        /* FIX: Constrained text size strictly within the block using max-width and block display */
         .block-title { font-size: 0.7rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; padding: 0 4px; max-width: 100%; display: block; text-align: center; }
         .time-block.actual .block-title { text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 
@@ -212,13 +215,38 @@
             .time-block:hover::after { opacity: 1; }
         }
 
+        /* --- Custom Timeline Markers Options --- */
+        .timeline-wrapper.show-markers[data-marker-style="border"] .time-block:nth-child(3n):not(:last-child) { border-right: 2px solid var(--text-muted); }
+        .timeline-wrapper.show-markers[data-marker-style="border"] .time-block:nth-child(6) { border-right: 3px solid var(--primary); }
+        
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(3)::before,
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(6)::before,
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(9)::before,
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(12)::before {
+            position: absolute;
+            font-size: clamp(1.6rem, 4vw, 2.5rem);
+            font-weight: 800;
+            color: var(--text-main);
+            opacity: var(--marker-opacity);
+            pointer-events: none;
+            z-index: 1;
+            line-height: 1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(3)::before { content: '15'; }
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(6)::before { content: '30'; font-size: clamp(1.8rem, 4.5vw, 2.8rem); opacity: calc(var(--marker-opacity) + 0.03); color: var(--primary); }
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(9)::before { content: '45'; }
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(12)::before { content: '60'; }
+
         /* FAB */
-        .fab-customize { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(150px); background: var(--text-main); color: var(--surface-color); padding: 16px 32px; border-radius: 30px; font-size: 1.15rem; font-weight: 800; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: none; display: flex; align-items: center; gap: 12px; cursor: pointer; z-index: 150; opacity: 0; pointer-events: none; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; }
+        .fab-customize { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(150px); background: var(--text-main); color: var(--surface-color); padding: 16px 32px; border-radius: 30px; font-size: 1.15rem; font-weight: 800; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: none; display: flex; align-items: center; gap: 12px; cursor: pointer; z-index: 150; opacity: 0; pointer-events: none; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; }
         .fab-customize.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
         .fab-customize:active { transform: translateX(-50%) translateY(5px) scale(0.95); }
         .fab-customize .badge { background: var(--surface-color); color: var(--text-main); padding: 2px 10px; border-radius: 12px; font-size: 0.95rem; }
 
-        /* Action Panel (Drawer) */
+        /* Action Panel */
         .action-panel { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-color); border-top: 1px solid var(--border-color); border-radius: 30px 30px 0 0; padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom)) 1.5rem; box-shadow: 0 -15px 50px rgba(0, 0, 0, 0.2); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; transform: translateY(100%); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); max-height: 90vh; overflow-y: auto;}
         .action-panel.visible { transform: translateY(0); }
         .panel-drag-handle { width: 50px; height: 5px; background: var(--border-color); border-radius: 5px; margin: 0 auto 1.5rem auto; }
@@ -234,7 +262,6 @@
         select.styled-select:focus { border-color: var(--primary); }
         .color-divider { width: 1px; height: 24px; background: var(--border-color); margin: 0 6px; }
 
-        /* Micro-Tasks */
         .micro-tasks-container { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.2rem; display: flex; flex-direction: column; gap: 10px; }
         .micro-tasks-container h4 { margin: 0; font-size: 1rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; font-weight: 700;}
         .task-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; padding-right: 5px;}
@@ -255,6 +282,8 @@
         .bp-clear { background-color: var(--block-blank-hover); color: var(--text-main); border: 1px solid var(--border-color); }
         .bp-shift { background-color: var(--primary-transparent); color: var(--primary); border: 1px solid var(--primary); }
 
+        .app-footer { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding-top: 2rem; border-top: 1px dashed var(--border-color); margin-top: auto; font-weight: 600; letter-spacing: 1px; width: 100%; max-width: 1000px; }
+
         @media (max-width: 768px) { 
             .btn-group { flex-wrap: wrap; }
             .action-panel { padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)) 1rem; }
@@ -268,13 +297,19 @@
             .stats-modal { height: 95vh; }
             .exec-score-banner { flex-direction: column; gap: 1rem; text-align: center; }
             
-            /* FIX: minmax(0, 1fr) applied here too for Mobile */
-            .blocks-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 4px;}
+            .blocks-grid[data-grid="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+            .blocks-grid[data-grid="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .blocks-grid[data-grid="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            
+            .blocks-grid[data-grid="4"] .time-block { height: 40px; }
+            .blocks-grid[data-grid="3"] .time-block { height: 38px; }
+            
             .hour-row { height: auto; align-items: stretch; }
             .time-block { height: 44px; } 
-        }
 
-        @keyframes flowPulseText { 0% { text-shadow: 0 0 10px var(--primary-glow); } 100% { text-shadow: 0 0 35px var(--primary); } }
+            .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(3n) { border-right: none; }
+            .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(6) { border-bottom: 2px dashed var(--border-color); }
+        }
     </style>
 </head>
 <body>
@@ -285,6 +320,7 @@
         <symbol id="icon-flow" viewBox="0 0 24 24"><path d="M18.6 6.62c-1.44 0-2.8.56-3.77 1.53L12 10.66 10.48 12h.01L7.8 14.39c-.64.64-1.49.99-2.4.99-1.87 0-3.39-1.51-3.39-3.38S3.53 8.62 5.4 8.62c.91 0 1.76.35 2.44 1.03l1.13 1 1.51-1.34L9.22 8.2C8.2 7.18 6.84 6.62 5.4 6.62 2.42 6.62 0 9.04 0 12s2.42 5.38 5.4 5.38c1.44 0 2.8-.56 3.77-1.53l2.83-2.5.01.01L13.52 12h-.01l2.69-2.39c.64-.64 1.49-.99 2.4-.99 1.87 0 3.39 1.51 3.39 3.38s-1.52 3.38-3.39 3.38c-.9 0-1.76-.35-2.44-1.03l-1.14-1.01-1.51 1.34 1.27 1.12c1.02 1.01 2.37 1.57 3.82 1.57 2.98 0 5.4-2.41 5.4-5.38s-2.42-5.37-5.4-5.37z"/></symbol>
         <symbol id="icon-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></symbol>
         <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></symbol>
+        <symbol id="icon-timeline-settings" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></symbol>
         <symbol id="icon-stats" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></symbol>
         <symbol id="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
         <symbol id="icon-export" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
@@ -306,7 +342,7 @@
 
     <div class="app-wrapper">
         <div class="app-header">
-            <div class="app-title">Pomodoro</div>
+            <div class="app-title">Prax</div>
             <div class="app-signature">By Mohamed Islam</div>
         </div>
 
@@ -344,23 +380,32 @@
 
             <div class="bottom-links">
                 <button class="link-btn" onclick="triggerHaptic(); openModal('notesModal')"><svg class="icon-sm"><use href="#icon-notes"></use></svg> Notes</button>
-                <button class="link-btn" onclick="triggerHaptic(); openModal('settingsModal')"><svg class="icon-sm"><use href="#icon-settings"></use></svg> Settings</button>
+                <button class="link-btn" onclick="triggerHaptic(); openModal('settingsModal')"><svg class="icon-sm"><use href="#icon-settings"></use></svg> Timer Settings</button>
                 <button class="link-btn" onclick="triggerHaptic(); openModal('statsModal'); loadFullStats();"><svg class="icon-sm"><use href="#icon-stats"></use></svg> Statistics</button>
             </div>
         </div>
 
         <div class="glass-panel">
             <div class="timeline-header">
-                <div class="timeline-title"><svg class="icon-lg" style="color: var(--primary)"><use href="#icon-timeline"></use></svg> Daily Time Blocks</div>
+                <div class="timeline-title" style="flex-wrap: wrap;">
+                    <svg class="icon-lg" style="color: var(--primary)"><use href="#icon-timeline"></use></svg> 
+                    <span id="timeline-title-text">Daily Time Blocks</span>
+                    <div class="timeline-date-controls">
+                        <input type="date" id="timelineDatePicker" onchange="loadTimelineForDate(this.value)" title="View Past Records">
+                        <button class="tool-btn" id="btn-go-today" title="Back to Today" onclick="loadTimelineForDate(getToday())" style="display:none; width:32px; height:32px;"><svg class="icon-sm"><use href="#icon-reset"></use></svg></button>
+                    </div>
+                </div>
                 <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
                     <div class="timeline-stats">
                         <div title="Focus Blocks (Planned/Actual)">Work: <span id="stat-work">0</span>m</div>
                         <div title="Rest Blocks">Rest: <span id="stat-rest">0</span>m</div>
                     </div>
                     <div class="timeline-tools">
-                        <button class="tool-btn" id="btn-undo" title="Undo" disabled><svg class="icon"><use href="#icon-undo"></use></svg></button>
-                        <button class="tool-btn" id="btn-export" title="Export as Image"><svg class="icon"><use href="#icon-export"></use></svg></button>
-                        <button class="tool-btn" style="border-color: #ef4444; color: #ef4444;" id="btn-clear-all" title="Clear Day"><svg class="icon"><use href="#icon-delete"></use></svg></button>
+                        <button class="tool-btn edit-tool" id="btn-timeline-settings" title="Timeline Settings" onclick="openModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-timeline-settings"></use></svg></button>
+                        <button class="tool-btn" id="btn-jump-now" title="Jump to Current Time" onclick="scrollToNow()"><svg class="icon"><use href="#icon-flow"></use></svg></button>
+                        <button class="tool-btn edit-tool" id="btn-undo" title="Undo" disabled><svg class="icon"><use href="#icon-undo"></use></svg></button>
+                        <button class="tool-btn edit-tool" id="btn-export" title="Export as Image"><svg class="icon"><use href="#icon-export"></use></svg></button>
+                        <button class="tool-btn edit-tool" style="border-color: #ef4444; color: #ef4444;" id="btn-clear-all" title="Clear Day"><svg class="icon"><use href="#icon-delete"></use></svg></button>
                     </div>
                 </div>
             </div>
@@ -369,6 +414,8 @@
                 <div id="timeline"></div>
             </div>
         </div>
+        
+        <div class="app-footer">&copy; 2026 Prax. All Rights Reserved.</div>
     </div>
 
     <div class="modal-overlay" id="distractModal">
@@ -394,43 +441,101 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content settings-modal">
             <button class="close-btn" onclick="closeModal('settingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
-            <h2 class="modal-title">Settings</h2>
-            <div class="setting-group" style="padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
-                <div class="setting-label"><span>Global Rest Color</span><small>Timeline color for Rest blocks</small></div>
-                <div class="color-picker-wrapper" style="width: 32px; height: 32px; border-width: 3px;"><input type="color" id="global-rest-color" value="#10b981" onchange="updateRestColor(this.value)"></div>
-            </div>
+            <h2 class="modal-title">Timer Settings</h2>
+            
             <div class="setting-group">
                 <div class="setting-label"><span>Focus Time</span><small>Minutes per session</small></div>
-                <input type="number" id="workMins" class="setting-input" value="25" min="1" onchange="updateSettings()">
+                <input type="number" id="workMins" class="setting-input" value="25" min="1" onchange="updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Short Break</span><small>Minutes between sessions</small></div>
-                <input type="number" id="shortBreakMins" class="setting-input" value="5" min="1" onchange="updateSettings()">
+                <input type="number" id="shortBreakMins" class="setting-input" value="5" min="1" onchange="updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Long Break</span><small>Minutes after cycles</small></div>
-                <input type="number" id="longBreakMins" class="setting-input" value="15" min="1" onchange="updateSettings()">
+                <input type="number" id="longBreakMins" class="setting-input" value="15" min="1" onchange="updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Cycle Limit</span><small>Sessions before long break</small></div>
-                <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="updateSettings()">
+                <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Auto-start Breaks</span><small>Start without clicking</small></div>
-                <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="updateSettings()"><span class="slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="updateTimerSettings()"><span class="slider"></span></label>
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Auto-start Focus</span><small>Start after break ends</small></div>
-                <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="updateSettings()"><span class="slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="updateTimerSettings()"><span class="slider"></span></label>
             </div>
-            <div class="setting-group" style="border-bottom: none;">
+            <div class="setting-group" style="padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
                 <div class="setting-label"><span>Alarm Volume</span><small>Notification sound level</small></div>
                 <input type="range" id="alarmVolume" class="vol-slider" min="0" max="1" step="0.1" value="0.5" onchange="testSound()">
             </div>
+            <div class="setting-group" style="border-bottom: none;">
+                <div class="setting-label"><span>Alarm Sound</span><small>Choose notification tone</small></div>
+                <select id="alarmSoundSelect" class="styled-select" onchange="updateTimerSettings(); testSound();">
+                    <option value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">Classic</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3">Digital</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/1000/1000-preview.mp3">Bell</option>
+                </select>
+            </div>
+            
             <div class="action-btns-grid">
                 <button class="action-btn" onclick="exportData()"><svg class="icon"><use href="#icon-export"></use></svg> Export Data</button>
                 <button class="action-btn" onclick="document.getElementById('importFile').click()"><svg class="icon"><use href="#icon-import"></use></svg> Import Data</button>
                 <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="timelineSettingsModal">
+        <div class="modal-content settings-modal">
+            <button class="close-btn" onclick="closeModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Timeline Customization</h2>
+            
+            <div class="setting-group">
+                <div class="setting-label"><span>Global Rest Color</span><small>Timeline color for Rest blocks</small></div>
+                <div class="color-picker-wrapper" style="width: 32px; height: 32px; border-width: 3px;"><input type="color" id="global-rest-color" value="#10b981" onchange="updateRestColor(this.value)"></div>
+            </div>
+            
+            <div class="setting-group">
+                <div class="setting-label"><span>Mobile Grid</span><small>Blocks per row on phones</small></div>
+                <select id="mobileGridSelect" class="styled-select" onchange="updateTimelineSettings()">
+                    <option value="6">6 Blocks (30 min)</option>
+                    <option value="4">4 Blocks (20 min)</option>
+                    <option value="3">3 Blocks (15 min)</option>
+                </select>
+            </div>
+            
+            <div class="setting-group" style="padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
+                <div class="setting-label"><span>Time Markers</span><small>Show visual guides</small></div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="timeMarkersToggle" onchange="updateTimelineSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <div class="setting-label"><span>Marker Style</span><small>Border vs Blended Text</small></div>
+                <select id="markerStyleSelect" class="styled-select" onchange="updateTimelineSettings()">
+                    <option value="text">Watermark Text</option>
+                    <option value="border">Solid Borders</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label"><span>Marker Opacity</span><small>Adjust watermark visibility</small></div>
+                <input type="range" id="markerOpacity" class="vol-slider" min="0.01" max="0.30" step="0.01" value="0.05" onchange="updateTimelineSettings()">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label"><span>Block Roundness</span><small>Adjust corner radius</small></div>
+                <input type="range" id="blockRadius" class="vol-slider" min="0" max="15" step="1" value="6" onchange="updateTimelineSettings()">
+            </div>
+
+            <div class="setting-group" style="border-bottom: none;">
+                <div class="setting-label"><span>Block Spacing</span><small>Gap between blocks</small></div>
+                <input type="range" id="blockGap" class="vol-slider" min="0" max="6" step="1" value="2" onchange="updateTimelineSettings()">
             </div>
         </div>
     </div>
@@ -522,7 +627,7 @@
         let mainColors = JSON.parse(localStorage.getItem('mainColors')) || ['#ff4757', '#0abde3', '#00d2d3', '#ff9f43', '#8b5cf6'];
         
         let timerId = null, isRunning = false, isFlowMode = false, currentMode = 'work', completedCycles = 0, sessionStartTime = null;
-        let config = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, cyclesLimit: 4, autoBreak: false, autoFocus: false, volume: 0.5 };
+        let config = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60, cyclesLimit: 4, autoBreak: false, autoFocus: false, volume: 0.5, alarmUrl: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' };
         let timeLeft = config.work, flowSeconds = 0, distractionStart = null;
 
         const themes = ['light', 'dark', 'amoled'];
@@ -533,9 +638,19 @@
         let blocksData = [], isDragging = false, currentSelection = new Set(), historyStack = [];
         let backupBlocksSnapshot = null, originalClickType = 'add', currentChainId = null; 
 
+        // Multi-day architecture variables
+        let currentViewDate = getToday();
+        let isReadOnly = false;
+
+        // Performance: DOM Caching
+        let timeBlockElements = [];
+
+        // Touch Variables for Mobile Fix
+        let touchTimer = null, startTouchY = 0, startTouchX = 0, isTouchDrawing = false;
+
         const timeDisplay = document.getElementById('timeDisplay'), startBtn = document.getElementById('startBtn'), flowBtn = document.getElementById('flowBtn'), phaseText = document.getElementById('phaseText'), taskInput = document.getElementById('taskInput'), timerWrapper = document.getElementById('timerWrapper');
         const distractBtn = document.getElementById('distractBtn');
-        const alarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        let alarmSound = new Audio(config.alarmUrl);
         let myChart = null;
         const particlesContainer = document.getElementById('particles');
         let particleInterval = null, activeParticlesCount = 0; const MAX_PARTICLES = 35;
@@ -544,20 +659,25 @@
 
         function triggerHaptic(duration = 30) { if(navigator.vibrate) navigator.vibrate(duration); }
         function generateId() { return Math.random().toString(36).substr(2, 9); }
+        function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]);
             applyPrimaryColor(currentPrimaryColor); updateRestColor(currentRestColor, false);
             document.getElementById('global-rest-color').value = currentRestColor;
             
-            loadSavedConfig(); updateDisplay(); initChart(); initTimeline(); startPlayheadTracker();
+            loadSavedConfig(); updateDisplay(); initChart(); 
+            buildTimelineGrid(); 
+            initTimelineData(); 
+            startPlayheadTracker();
+            
+            loadTimelineSettings();
 
             document.getElementById('appNotes').value = localStorage.getItem('pomoNotes') || '';
             document.getElementById('appNotes').addEventListener('input', (e) => localStorage.setItem('pomoNotes', e.target.value));
 
             fabCustomize.addEventListener('click', () => { triggerHaptic(50); openEditPanel(); });
 
-            // Optimized Live Update Binding
             const inputsToWatch = [timelineTaskInput, blockTypeSelect, tagEmoji, tagText, document.getElementById('auto-rest'), document.getElementById('rest-duration')];
             inputsToWatch.forEach(el => { el.addEventListener('input', liveUpdate); });
 
@@ -566,27 +686,35 @@
             document.getElementById('btn-clear').addEventListener('click', () => { triggerHaptic(50); clearSelectedBlocks(); });
             document.getElementById('btn-shift').addEventListener('click', () => { triggerHaptic(80); shiftBlocksForward(); });
             document.getElementById('btn-clear-all').addEventListener('click', () => {
+                if(isReadOnly) return;
                 if(confirm('Clear entire day?')) { saveHistory(); blocksData.forEach(b => { b.type='blank'; b.title=''; b.actual=false; delete b.customTag; delete b.subtasks; delete b.chainId; }); renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal();}
             });
             document.getElementById('btn-undo').addEventListener('click', () => {
+                if(isReadOnly) return;
                 if(historyStack.length > 0) { blocksData = JSON.parse(historyStack.pop()); document.getElementById('btn-undo').disabled = historyStack.length === 0; renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); }
             });
 
-            // UX Feature: Click outside modal to close
             window.onclick = function(event) {
                 if (event.target.classList.contains('modal-overlay')) {
                     event.target.classList.remove('active');
                 }
             };
 
-            // UX Feature: Keyboard Shortcuts
+            const handleDeselect = (e) => {
+                if (currentSelection.size > 0 && !actionPanel.classList.contains('visible')) {
+                    if (!e.target.closest('.time-block') && !e.target.closest('#fab-customize')) {
+                        clearSelection();
+                    }
+                }
+            };
+            document.addEventListener('mousedown', handleDeselect);
+            document.addEventListener('touchstart', handleDeselect, {passive: true});
+
             document.addEventListener('keydown', (e) => {
-                // ESC to close modals & action panel
                 if(e.key === 'Escape') {
                     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
                     if(actionPanel.classList.contains('visible')) cancelEdit();
                 }
-                // Space to toggle timer (only if not typing in input/textarea)
                 if(e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                     e.preventDefault();
                     toggleTimer();
@@ -595,6 +723,142 @@
 
             document.addEventListener("visibilitychange", () => { if (document.hidden && isRunning) clearInterval(particleInterval); else if (!document.hidden && isRunning && isFlowMode) startParticles(); });
         });
+
+        // --- Timeline Multi-Day Architecture ---
+        function initTimelineData() {
+            const today = getToday();
+            
+            // Smart Migration: move legacy single-day data to today if it exists
+            const legacyData = localStorage.getItem('timelineBlocksData');
+            if(legacyData && !localStorage.getItem(`praxTimeline_${today}`)) {
+                localStorage.setItem(`praxTimeline_${today}`, legacyData);
+                localStorage.removeItem('timelineBlocksData'); // clean old structure
+            }
+
+            loadTimelineForDate(today);
+        }
+
+        function loadTimelineForDate(dateStr) {
+            currentViewDate = dateStr;
+            const today = getToday();
+            isReadOnly = (dateStr !== today);
+            
+            document.getElementById('timelineDatePicker').value = dateStr;
+            const btnGoToday = document.getElementById('btn-go-today');
+            const titleText = document.getElementById('timeline-title-text');
+            const timelineWrapper = document.querySelector('.timeline-wrapper');
+            
+            // UX Updates based on mode
+            if(isReadOnly) {
+                btnGoToday.style.display = 'flex';
+                titleText.innerHTML = `History <span style="font-size:0.6em; color:#ef4444; margin-left:8px; padding: 2px 6px; border:1px solid #ef4444; border-radius:8px;">Read-Only</span>`;
+                timelineWrapper.style.opacity = '0.7';
+                document.getElementById('playhead').style.display = 'none';
+                document.querySelectorAll('.edit-tool').forEach(btn => btn.disabled = true);
+                clearSelection();
+            } else {
+                btnGoToday.style.display = 'none';
+                titleText.innerHTML = `Daily Time Blocks`;
+                timelineWrapper.style.opacity = '1';
+                document.getElementById('playhead').style.display = 'block';
+                document.querySelectorAll('.edit-tool').forEach(btn => btn.disabled = false);
+            }
+
+            const saved = JSON.parse(localStorage.getItem(`praxTimeline_${dateStr}`));
+            if (saved && saved.length === (TOTAL_HOURS * BLOCKS_PER_HOUR)) {
+                blocksData = saved;
+            } else {
+                // Generate empty day
+                blocksData = [];
+                for (let h = 0; h < TOTAL_HOURS; h++) {
+                    for (let b = 0; b < BLOCKS_PER_HOUR; b++) {
+                        blocksData.push({ type: 'blank', title: '', actual: false });
+                    }
+                }
+                if(!isReadOnly) saveTimelineToLocal(); // Save empty init only if today
+            }
+
+            historyStack = [];
+            document.getElementById('btn-undo').disabled = true;
+            renderTimelineBlocks();
+            updateTimelineStats();
+            if(!isReadOnly) {
+                // trigger a playhead update immediately if switching to today
+                const d = new Date(); 
+                const percentage = ((d.getHours() * 60 + d.getMinutes()) / (24 * 60)) * 100;
+                document.getElementById('playhead').style.top = `${percentage}%`;
+            }
+        }
+
+        // --- Timeline Settings ---
+        function updateTimelineSettings() {
+            const gridValue = document.getElementById('mobileGridSelect').value;
+            const showMarkers = document.getElementById('timeMarkersToggle').checked;
+            const markerStyle = document.getElementById('markerStyleSelect').value;
+            const mOpacity = document.getElementById('markerOpacity').value;
+            const bRadius = document.getElementById('blockRadius').value;
+            const bGap = document.getElementById('blockGap').value;
+            
+            localStorage.setItem('pomoMobileGrid', gridValue);
+            localStorage.setItem('pomoTimeMarkers', showMarkers);
+            localStorage.setItem('pomoMarkerStyle', markerStyle);
+            localStorage.setItem('pomoMarkerOpacity', mOpacity);
+            localStorage.setItem('pomoBlockRadius', bRadius);
+            localStorage.setItem('pomoBlockGap', bGap);
+            
+            document.querySelectorAll('.blocks-grid').forEach(grid => {
+                grid.setAttribute('data-grid', gridValue);
+            });
+            
+            const timelineWrapper = document.querySelector('.timeline-wrapper');
+            if(showMarkers) {
+                timelineWrapper.classList.add('show-markers');
+                timelineWrapper.setAttribute('data-marker-style', markerStyle);
+            } else {
+                timelineWrapper.classList.remove('show-markers');
+            }
+
+            document.documentElement.style.setProperty('--marker-opacity', mOpacity);
+            document.documentElement.style.setProperty('--block-radius', bRadius + 'px');
+            document.documentElement.style.setProperty('--block-gap', bGap + 'px');
+        }
+
+        function loadTimelineSettings() {
+            const savedGrid = localStorage.getItem('pomoMobileGrid') || '6';
+            const savedMarkers = localStorage.getItem('pomoTimeMarkers') === 'true'; // Default true
+            const savedMarkerStyle = localStorage.getItem('pomoMarkerStyle') || 'text';
+            const savedOpacity = localStorage.getItem('pomoMarkerOpacity') || '0.05';
+            const savedRadius = localStorage.getItem('pomoBlockRadius') || '6';
+            const savedGap = localStorage.getItem('pomoBlockGap') || '2';
+            
+            document.getElementById('mobileGridSelect').value = savedGrid;
+            document.getElementById('timeMarkersToggle').checked = savedMarkers;
+            document.getElementById('markerStyleSelect').value = savedMarkerStyle;
+            document.getElementById('markerOpacity').value = savedOpacity;
+            document.getElementById('blockRadius').value = savedRadius;
+            document.getElementById('blockGap').value = savedGap;
+            
+            updateTimelineSettings();
+        }
+
+        function scrollToNow() {
+            triggerHaptic(30);
+            if(isReadOnly) { loadTimelineForDate(getToday()); } // if in past, jump to today's screen first
+            
+            setTimeout(() => {
+                const nowBlock = document.querySelector('.time-block.is-now');
+                if(nowBlock) {
+                    nowBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const origBg = nowBlock.style.backgroundColor;
+                    nowBlock.style.transition = 'background-color 0.5s';
+                    nowBlock.style.backgroundColor = 'var(--primary)';
+                    setTimeout(() => {
+                        nowBlock.style.backgroundColor = origBg;
+                        setTimeout(() => nowBlock.style.transition = '', 500);
+                    }, 500);
+                }
+            }, 50); // slight delay to ensure DOM is rendered if we jumped days
+        }
 
         function cycleTheme() { currentThemeIndex = (currentThemeIndex + 1) % 3; document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]); localStorage.setItem('pomoMode', themes[currentThemeIndex]); if(myChart) loadFullStats(); }
         function applyPrimaryColor(color) {
@@ -617,24 +881,65 @@
         function loadSavedConfig() {
             const saved = JSON.parse(localStorage.getItem('pomoConfig')); if(saved) config = {...config, ...saved};
             ['work', 'shortBreak', 'longBreak'].forEach(k => document.getElementById(`${k}Mins`).value = config[k] / 60);
-            document.getElementById('cyclesLimit').value = config.cyclesLimit; document.getElementById('autoBreak').checked = config.autoBreak; document.getElementById('autoFocus').checked = config.autoFocus; document.getElementById('alarmVolume').value = config.volume;
+            document.getElementById('cyclesLimit').value = config.cyclesLimit; 
+            document.getElementById('autoBreak').checked = config.autoBreak; 
+            document.getElementById('autoFocus').checked = config.autoFocus; 
+            document.getElementById('alarmVolume').value = config.volume;
+            if(config.alarmUrl) document.getElementById('alarmSoundSelect').value = config.alarmUrl;
+            alarmSound.src = config.alarmUrl;
             if(!isRunning) timeLeft = config.work;
         }
-        function updateSettings() {
+        function updateTimerSettings() {
             ['work', 'shortBreak', 'longBreak'].forEach(k => config[k] = document.getElementById(`${k}Mins`).value * 60);
-            config.cyclesLimit = document.getElementById('cyclesLimit').value; config.autoBreak = document.getElementById('autoBreak').checked; config.autoFocus = document.getElementById('autoFocus').checked; config.volume = document.getElementById('alarmVolume').value;
-            localStorage.setItem('pomoConfig', JSON.stringify(config)); if(!isRunning && !isFlowMode) resetTimer();
+            config.cyclesLimit = document.getElementById('cyclesLimit').value; 
+            config.autoBreak = document.getElementById('autoBreak').checked; 
+            config.autoFocus = document.getElementById('autoFocus').checked; 
+            config.volume = document.getElementById('alarmVolume').value;
+            config.alarmUrl = document.getElementById('alarmSoundSelect').value;
+            alarmSound.src = config.alarmUrl;
+            
+            localStorage.setItem('pomoConfig', JSON.stringify(config)); 
+            if(!isRunning && !isFlowMode) resetTimer();
         }
-        function testSound() { config.volume = document.getElementById('alarmVolume').value; alarmSound.volume = config.volume; alarmSound.currentTime = 0; alarmSound.play(); localStorage.setItem('pomoConfig', JSON.stringify(config)); }
+        function testSound() { 
+            config.volume = document.getElementById('alarmVolume').value; 
+            alarmSound.volume = config.volume; 
+            alarmSound.currentTime = 0; 
+            alarmSound.play().catch(e => console.log('Audio test error:', e)); 
+            localStorage.setItem('pomoConfig', JSON.stringify(config)); 
+        }
         function triggerNotification(title, body) { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: body }); }
         function getNowIndex() { const d = new Date(); return (d.getHours() * 12) + Math.floor(d.getMinutes() / 5); }
         
         function syncTimerToTimeline() {
             if (!isRunning) return;
-            const idx = getNowIndex(); const block = blocksData[idx];
+            const today = getToday();
+            
+            // Ghost Sync Logic: If viewing past, update today's data in the background
+            let targetData = blocksData;
+            let needsBackgroundSave = false;
+
+            if (currentViewDate !== today) {
+                const savedToday = JSON.parse(localStorage.getItem(`praxTimeline_${today}`));
+                if (savedToday) {
+                    targetData = savedToday;
+                    needsBackgroundSave = true;
+                } else return; // Nothing to sync to if today was never generated
+            }
+
+            const idx = getNowIndex(); 
+            const block = targetData[idx];
+            
             if (block && block.type !== 'blank' && !block.actual) {
                 if ((currentMode === 'work' && block.type === 'work') || (currentMode !== 'work' && block.type === 'rest')) {
-                    block.actual = true; saveTimelineToLocal(); renderTimelineBlocks(); updateTimelineStats();
+                    block.actual = true; 
+                    if (needsBackgroundSave) {
+                        localStorage.setItem(`praxTimeline_${today}`, JSON.stringify(targetData));
+                    } else {
+                        saveTimelineToLocal(); 
+                        renderTimelineBlocks(); 
+                        updateTimelineStats();
+                    }
                 }
             }
         }
@@ -693,13 +998,37 @@
         function stopParticles() { clearInterval(particleInterval); particlesContainer.innerHTML = ''; activeParticlesCount = 0; }
 
         // --- Stats & History Engine ---
-        function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
         function saveSession(task, dur, startT) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday(); if(!data[today]) data[today] = { totalMins: 0, sessions: [], distractions: [] }; data[today].totalMins += dur; data[today].sessions.unshift({ name: task, duration: dur, time: startT || new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) }); localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); updateTimelineStats(); }
         function addManualSession() { let taskName = prompt("Task Name:", "Manual Session"); if (!taskName) return; let duration = parseInt(prompt("Duration (mins):", "25")); if (isNaN(duration) || duration <= 0) return alert("Invalid duration!"); saveSession(taskName, duration, new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})); }
         function editSession(dateStr, idx) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); let s = data[dateStr].sessions[idx]; let newName = prompt("Edit Task Name:", s.name); if (newName === null) return; let newDur = parseInt(prompt("Edit Duration (mins):", s.duration)); if (isNaN(newDur) || newDur < 0) return alert("Invalid duration!"); data[dateStr].totalMins += (newDur - s.duration); s.name = newName; s.duration = newDur; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
         function deleteSession(dateStr, idx) { if(!confirm("Delete this session?")) return; let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); data[dateStr].totalMins -= data[dateStr].sessions[idx].duration; data[dateStr].sessions.splice(idx, 1); if(data[dateStr].sessions.length === 0 && (!data[dateStr].distractions || data[dateStr].distractions.length===0)) delete data[dateStr]; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
-        function exportData() { const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timeline: localStorage.getItem('timelineBlocksData'), notes: localStorage.getItem('pomoNotes') }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'pomodoro_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-        function importData(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const imported = JSON.parse(evt.target.result); if(imported.pomo) localStorage.setItem('pomoDataAdvanced', imported.pomo); if(imported.timeline) { blocksData = JSON.parse(imported.timeline); saveTimelineToLocal(); renderTimelineBlocks(); updateTimelineStats(); } if(imported.notes) { localStorage.setItem('pomoNotes', imported.notes); document.getElementById('appNotes').value = imported.notes; } alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); } catch(err) { alert('Invalid file format!'); } }; reader.readAsText(file); e.target.value = ''; }
+        
+        function exportData() { 
+            let allTimelines = {};
+            for(let i=0; i<localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if(key.startsWith('praxTimeline_')) {
+                    allTimelines[key] = localStorage.getItem(key);
+                }
+            }
+            const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timelines: allTimelines, notes: localStorage.getItem('pomoNotes') }; 
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'prax_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); 
+        }
+        
+        function importData(e) { 
+            const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(evt) { 
+                try { 
+                    const imported = JSON.parse(evt.target.result); 
+                    if(imported.pomo) localStorage.setItem('pomoDataAdvanced', imported.pomo); 
+                    if(imported.timelines) { 
+                        Object.keys(imported.timelines).forEach(k => localStorage.setItem(k, imported.timelines[k]));
+                        loadTimelineForDate(getToday());
+                    } 
+                    if(imported.notes) { localStorage.setItem('pomoNotes', imported.notes); document.getElementById('appNotes').value = imported.notes; } 
+                    alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); 
+                } catch(err) { alert('Invalid file format!'); } 
+            }; reader.readAsText(file); e.target.value = ''; 
+        }
         
         function loadFullStats() {
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const sel = document.getElementById('dateSelector'); sel.innerHTML = ''; const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
@@ -723,20 +1052,32 @@
 
         function startPlayheadTracker() {
             const updatePlayhead = () => { 
-                const now = new Date(); const totalMins = 24 * 60; const currentMins = now.getHours() * 60 + now.getMinutes(); const percentage = (currentMins / totalMins) * 100; 
-                const playhead = document.getElementById('playhead'); playhead.style.display = 'block'; playhead.style.top = `${percentage}%`; 
-                
-                // UX Feature: Highlight Current Time Block
-                const currentIdx = getNowIndex();
-                document.querySelectorAll('.time-block').forEach(b => b.classList.remove('is-now'));
-                const nowBlock = document.querySelector(`.time-block[data-index="${currentIdx}"]`);
-                if(nowBlock) nowBlock.classList.add('is-now');
+                const today = getToday();
+                // Midnight auto-reset check
+                if(currentViewDate !== today && !isReadOnly) {
+                    loadTimelineForDate(today);
+                    return; // reload handles the UI
+                }
+
+                if(!isReadOnly) {
+                    const now = new Date(); const totalMins = 24 * 60; const currentMins = now.getHours() * 60 + now.getMinutes(); const percentage = (currentMins / totalMins) * 100; 
+                    const playhead = document.getElementById('playhead'); playhead.style.display = 'block'; playhead.style.top = `${percentage}%`; 
+                    
+                    const currentIdx = getNowIndex();
+                    // Performance: Instead of querySelectorAll, loop through cached elements
+                    timeBlockElements.forEach((b, i) => {
+                        if(i === currentIdx) b.classList.add('is-now');
+                        else b.classList.remove('is-now');
+                    });
+                }
             };
             updatePlayhead(); setInterval(updatePlayhead, 60000);
         }
 
-        function initTimeline() {
-            const saved = JSON.parse(localStorage.getItem('timelineBlocksData')); let isLoaded = saved && saved.length === (TOTAL_HOURS * BLOCKS_PER_HOUR);
+        function buildTimelineGrid() {
+            timeline.innerHTML = '';
+            timeBlockElements = []; // Reset cache
+            
             for (let h = 0; h < TOTAL_HOURS; h++) {
                 const row = document.createElement('div'); row.className = 'hour-row';
                 const label = document.createElement('div'); label.className = 'hour-label'; label.innerHTML = `<span>${h % 12 === 0 ? 12 : h % 12}</span><span style="font-size:0.7em">${h >= 12 ? 'PM' : 'AM'}</span>`; row.appendChild(label);
@@ -744,24 +1085,61 @@
                 const grid = document.createElement('div'); grid.className = 'blocks-grid';
                 for (let b = 0; b < BLOCKS_PER_HOUR; b++) {
                     const idx = (h * BLOCKS_PER_HOUR) + b;
-                    if (!isLoaded) blocksData.push({ type: 'blank', title: '', actual: false }); else blocksData = saved;
                     const block = document.createElement('div'); block.className = 'time-block'; block.dataset.index = idx;
                     
                     block.addEventListener('mousedown', (e) => startSelection(idx));
                     block.addEventListener('mouseenter', (e) => moveSelection(idx));
-                    // Mobile Touch 
-                    block.addEventListener('touchstart', (e) => { e.preventDefault(); startSelection(idx); }, {passive: false});
-                    block.addEventListener('touchmove', (e) => { e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if(target && target.classList.contains('time-block')) { const tidx = parseInt(target.dataset.index); if(!isNaN(tidx)) moveSelection(tidx); } }, {passive: false});
                     
+                    block.addEventListener('touchstart', (e) => { 
+                        if(isReadOnly) return;
+                        const touch = e.touches[0];
+                        startTouchY = touch.clientY;
+                        startTouchX = touch.clientX;
+                        isTouchDrawing = false;
+                        
+                        touchTimer = setTimeout(() => {
+                            isTouchDrawing = true;
+                            triggerHaptic(50);
+                            startSelection(idx);
+                        }, 250);
+                    }, {passive: true});
+                    
+                    block.addEventListener('touchmove', (e) => { 
+                        if(isReadOnly) return;
+                        if (!isTouchDrawing) {
+                            const touch = e.touches[0];
+                            if (Math.abs(touch.clientY - startTouchY) > 10 || Math.abs(touch.clientX - startTouchX) > 10) {
+                                clearTimeout(touchTimer);
+                            }
+                            return; 
+                        }
+                        
+                        e.preventDefault(); 
+                        const touch = e.touches[0];
+                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if(target && target.classList.contains('time-block')) {
+                            const tidx = parseInt(target.dataset.index);
+                            if(!isNaN(tidx)) moveSelection(tidx);
+                        }
+                    }, {passive: false});
+
+                    block.addEventListener('touchend', () => {
+                        if(isReadOnly) return;
+                        clearTimeout(touchTimer);
+                        if(isTouchDrawing) {
+                            endSelection();
+                            isTouchDrawing = false;
+                        }
+                    });
+
                     grid.appendChild(block);
+                    timeBlockElements.push(block); // Add to Cache
                 }
                 row.appendChild(grid); timeline.appendChild(row);
             }
-            renderTimelineBlocks(); updateTimelineStats();
         }
 
         window.addEventListener('mouseup', endSelection);
-        window.addEventListener('touchend', endSelection);
         
         function getChainIndices(startIdx) {
             const target = blocksData[startIdx];
@@ -774,7 +1152,8 @@
         }
 
         function startSelection(idx) {
-            if (actionPanel.classList.contains('visible')) return; triggerHaptic(20); isDragging = true; 
+            if (isReadOnly || actionPanel.classList.contains('visible')) return; 
+            triggerHaptic(20); isDragging = true; 
             if(blocksData[idx].type !== 'blank') {
                 const chain = getChainIndices(idx);
                 chain.forEach(i => currentSelection.add(i)); updateDOMSelection(); openEditPanel(); isDragging = false; return;
@@ -782,14 +1161,17 @@
             originalClickType = currentSelection.has(idx) ? 'remove' : 'add'; toggleBlock(idx, originalClickType);
         }
         function moveSelection(idx) {
-            if (!isDragging || actionPanel.classList.contains('visible')) return; 
+            if (isReadOnly || !isDragging || actionPanel.classList.contains('visible')) return; 
             if (blocksData[idx].type === 'blank') { toggleBlock(idx, originalClickType); } 
         }
         function endSelection() { isDragging = false; }
         function toggleBlock(idx, mode) { if (mode === 'add') currentSelection.add(idx); else currentSelection.delete(idx); updateDOMSelection(); }
 
         function updateDOMSelection() {
-            document.querySelectorAll('.time-block').forEach(el => { el.classList.toggle('selected', currentSelection.has(parseInt(el.dataset.index))); });
+            // Performance: Using Cached DOM elements
+            timeBlockElements.forEach((el, idx) => { 
+                el.classList.toggle('selected', currentSelection.has(idx)); 
+            });
             if (currentSelection.size > 0 && !actionPanel.classList.contains('visible')) { fabCustomize.classList.add('visible'); document.getElementById('fab-count').innerText = currentSelection.size; } else { fabCustomize.classList.remove('visible'); }
         }
 
@@ -887,38 +1269,42 @@
         }
 
         function saveHistory() { historyStack.push(JSON.stringify(blocksData)); if(historyStack.length > 20) historyStack.shift(); document.getElementById('btn-undo').disabled = false; }
-        function saveTimelineToLocal() { localStorage.setItem('timelineBlocksData', JSON.stringify(blocksData)); }
+        function saveTimelineToLocal() { if(isReadOnly) return; localStorage.setItem(`praxTimeline_${currentViewDate}`, JSON.stringify(blocksData)); }
         
         function saveEdit() { saveHistory(); saveTimelineToLocal(); clearSelection(); }
         function cancelEdit() { if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); renderTimelineBlocks(); updateTimelineStats(); clearSelection(); }
         function clearSelectedBlocks() { saveHistory(); if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); currentSelection.forEach(idx => { blocksData[idx] = { type: 'blank', title: '', actual: false }; }); renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); }
 
         function renderTimelineBlocks() {
-            document.querySelectorAll('.time-block').forEach(el => {
-                const idx = parseInt(el.dataset.index), data = blocksData[idx];
-                
-                // Keep the is-now class if it has it
+            // Performance: Using Cached DOM elements to avoid massive reflows
+            timeBlockElements.forEach((el, idx) => {
+                const data = blocksData[idx];
                 const isNow = el.classList.contains('is-now');
-                el.className = 'time-block'; el.innerHTML = '';
-                if(isNow) el.classList.add('is-now');
-
-                if(currentSelection.has(idx)) el.classList.add('selected');
-
+                
+                // Rebuild classes
+                let newClasses = 'time-block';
+                if(isNow && !isReadOnly) newClasses += ' is-now';
+                if(currentSelection.has(idx)) newClasses += ' selected';
+                
+                // Only update innerHTML if it's not a blank block, or if we need to clear it
                 if (data.type !== 'blank') {
-                    el.classList.add(data.type);
-                    if (data.actual) el.classList.add('actual'); else el.classList.add('planned');
+                    newClasses += ` ${data.type} ${data.actual ? 'actual' : 'planned'}`;
+                    el.className = newClasses;
 
                     let tooltipText = `${formatTime(Math.floor(idx/12), idx%12)} | ${data.title}`;
                     if(data.actual) tooltipText += ' (Completed)';
                     el.dataset.tooltip = tooltipText;
 
-                    if (data.displayWord) { const s = document.createElement('span'); s.className = 'block-title'; s.textContent = data.displayWord; el.appendChild(s); }
-                    if(data.customTag) {
-                        const eg = document.createElement('span'); eg.className = 'custom-tag';
-                        eg.textContent = data.customTag.emoji || '*';
-                        el.appendChild(eg);
-                    }
-                } else { el.dataset.tooltip = formatTime(Math.floor(idx/12), idx%12); }
+                    let newHTML = '';
+                    if (data.displayWord) newHTML += `<span class="block-title">${data.displayWord}</span>`;
+                    if (data.customTag) newHTML += `<span class="custom-tag">${data.customTag.emoji || '*'}</span>`;
+                    el.innerHTML = newHTML;
+                    
+                } else { 
+                    el.className = newClasses;
+                    el.dataset.tooltip = formatTime(Math.floor(idx/12), idx%12);
+                    el.innerHTML = '';
+                }
             });
         }
 
