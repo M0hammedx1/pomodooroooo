@@ -777,51 +777,54 @@
         });
 
         // ================= SMART SYNC ENGINE =================
+// ================= SMART SYNC ENGINE & TIMESTAMP HOOK =================
         let syncTimeout = null, isSyncing = false;
+        window.isPullingData = false; // قفل لمنع تسجيل أختام زمنية أثناء التحميل من السحابة
         const SYNC_DEBOUNCE_MS = 5000;
         const syncStatusUI = document.getElementById('syncStatus'), syncTextUI = document.getElementById('syncText');
 
-        function smartMerge(localJson, cloudJson) {
-            let local = JSON.parse(localJson || '{}');
-            let cloud = JSON.parse(cloudJson || '{}');
-            let merged = { ...cloud, ...local }; 
-
-            if(local.pomoDataAdvanced && cloud.pomoDataAdvanced) {
-                let lPomo = JSON.parse(local.pomoDataAdvanced); let cPomo = JSON.parse(cloud.pomoDataAdvanced);
-                for(let date in cPomo) {
-                    if(!lPomo[date]) lPomo[date] = cPomo[date];
-                    else {
-                        let allSessions = [...lPomo[date].sessions, ...cPomo[date].sessions];
-                        lPomo[date].sessions = Array.from(new Set(allSessions.map(JSON.stringify))).map(JSON.parse);
-                        lPomo[date].sessions.sort((a,b) => b.time.localeCompare(a.time));
-
-                        let allDist = [...(lPomo[date].distractions||[]), ...(cPomo[date].distractions||[])];
-                        lPomo[date].distractions = Array.from(new Set(allDist.map(JSON.stringify))).map(JSON.parse);
-                        lPomo[date].distractions.sort((a,b) => b.time.localeCompare(a.time));
-
-                        lPomo[date].totalMins = Math.max(lPomo[date].totalMins, cPomo[date].totalMins);
-                    }
-                }
-                merged.pomoDataAdvanced = JSON.stringify(lPomo);
+        // 🧠 HACK: Override localStorage.setItem to auto-track exact edit times (LWW Logic)
+        const originalSetItem = localStorage.setItem;
+        localStorage.setItem = function(key, value) {
+            originalSetItem.apply(this, arguments);
+            // تتبع أوقات التعديل للبيانات الحساسة فقط
+            if (!window.isPullingData && (key.startsWith('praxTimeline_') || key === 'pomoDataAdvanced' || key === 'pomoNotes' || key.startsWith('pomo'))) {
+                originalSetItem.call(this, 'prax_ts_' + key, Date.now().toString());
             }
+        };
 
-            Object.keys(cloud).forEach(key => {
-                if(key.startsWith('praxTimeline_') && local[key]) {
-                    let lTime = JSON.parse(local[key]); let cTime = JSON.parse(cloud[key]);
-                    for(let i=0; i<288; i++) {
-                        if(lTime[i].type === 'blank' && cTime[i].type !== 'blank') lTime[i] = cTime[i];
-                        else if(lTime[i].type !== 'blank' && cTime[i].type !== 'blank' && cTime[i].actual && !lTime[i].actual) lTime[i] = cTime[i];
+        function smartMerge(localJson, cloudJson) {
+            try {
+                let local = JSON.parse(localJson || '{}');
+                let cloud = JSON.parse(cloudJson || '{}');
+                let merged = { ...cloud }; // الأساس هو السحابة
+
+                // LWW (Last-Write-Wins) مقارنة الأختام الزمنية
+                Object.keys(local).forEach(key => {
+                    if (key.startsWith('prax_ts_') || key === 'prax_saved_email') return;
+
+                    let tsKey = 'prax_ts_' + key;
+                    let localTs = parseInt(local[tsKey] || '0');
+                    let cloudTs = parseInt(cloud[tsKey] || '0');
+
+                    // لو المحلي أحدث، أو بيساويه، أو لو الداتا دي مش موجودة أصلاً في السحابة
+                    if (localTs >= cloudTs || !cloud[key]) {
+                        merged[key] = local[key];
+                        if (localTs > 0) merged[tsKey] = local[tsKey];
                     }
-                    merged[key] = JSON.stringify(lTime);
-                }
-            });
+                });
 
-            return JSON.stringify(merged);
+                return JSON.stringify(merged);
+            } catch (error) {
+                console.error("Critical Merge Error:", error);
+                return localJson;
+            }
         }
 
         function pullFromCloud() {
             if(!auth.currentUser) return;
-            syncStatusUI.style.opacity = '1'; syncTextUI.innerText = 'Pulling...';
+            syncStatusUI.style.opacity = '1'; syncStatusUI.style.color = 'var(--primary)'; syncTextUI.innerText = 'Pulling...';
+            
             db.collection('users').doc(auth.currentUser.uid).get().then(doc => {
                 if(doc.exists && doc.data().localStorageBackup) {
                     const localData = {};
@@ -833,7 +836,11 @@
                     
                     const mergedData = JSON.parse(smartMerge(JSON.stringify(localData), doc.data().localStorageBackup));
                     
-                    for(let key in mergedData) { localStorage.setItem(key, mergedData[key]); }
+                    window.isPullingData = true; // تفعيل القفل
+                    for(let key in mergedData) { 
+                        originalSetItem.call(localStorage, key, mergedData[key]); 
+                    }
+                    window.isPullingData = false; // فك القفل
                     
                     loadSavedConfig();
                     document.getElementById('appNotes').value = localStorage.getItem('pomoNotes') || '';
@@ -844,17 +851,16 @@
                     document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]);
                     applyPrimaryColor(localStorage.getItem('pomoPrimaryColor') || '#ff4757', false);
                     updateRestColor(localStorage.getItem('pomoRestColor') || '#10b981', false);
-                    loadTimelineSettings();
                 }
-                syncStatusUI.classList.add('synced'); syncTextUI.innerText = 'Synced';
+                syncStatusUI.classList.add('synced'); syncStatusUI.style.color = '#10b981'; syncTextUI.innerText = 'Synced';
                 setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
             }).catch(err => console.error("Pull error:", err));
         }
 
         function triggerSync() {
             if(!auth.currentUser) return;
-            syncStatusUI.style.opacity = '1'; syncStatusUI.classList.add('syncing'); syncTextUI.innerText = 'Syncing...';
-            clearTimeout(syncTimeout); isSyncing = false;
+            syncStatusUI.style.opacity = '1'; syncStatusUI.classList.add('syncing'); syncStatusUI.style.color = 'var(--primary)'; syncTextUI.innerText = 'Syncing...';
+            clearTimeout(syncTimeout); isSyncing = true;
             syncTimeout = setTimeout(() => { executeSync(); }, SYNC_DEBOUNCE_MS);
         }
 
@@ -877,7 +883,7 @@
                     lastSync: firebase.firestore.FieldValue.serverTimestamp()
                 }, {merge: true}).then(() => {
                     isSyncing = false;
-                    syncStatusUI.classList.remove('syncing'); syncStatusUI.classList.add('synced'); syncTextUI.innerText = 'Synced';
+                    syncStatusUI.classList.remove('syncing'); syncStatusUI.classList.add('synced'); syncStatusUI.style.color = '#10b981'; syncTextUI.innerText = 'Synced';
                     setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
                 });
             });
