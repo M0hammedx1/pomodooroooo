@@ -3,49 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
     <title>Prax: Focus & Timeline</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Outfit:wght@300;400;600;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             /* Light Mode */
-            --bg-color: #f4f6f8; --surface-color: #ffffff;
+            --bg-color: #f4f6f8; --surface-color: rgba(255, 255, 255, 0.85);
             --text-main: #1a1e21; --text-muted: #868e96;
-            --border-color: #e2e8f0; --shadow: 0 15px 35px -5px rgba(0,0,0,0.05);
-            --modal-bg: rgba(255, 255, 255, 0.85); --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            --glass-blur: blur(20px);
+            --border-color: rgba(226, 232, 240, 0.8); --shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+            --modal-bg: rgba(255, 255, 255, 0.9); --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --glass-blur: blur(24px);
             
             --primary: #ff4757; --primary-glow: rgba(255, 71, 87, 0.3); --primary-transparent: rgba(255, 71, 87, 0.15);
             --rest-color: #10b981; --rest-transparent: rgba(16, 185, 129, 0.15);
-            --block-blank: #f1f5f9; --block-blank-hover: #e2e8f0; --selection-border: var(--primary);
+            --block-blank: #f8fafc; --block-blank-hover: #e2e8f0; --selection-border: var(--primary);
             
-            /* Dynamic Timeline Vars */
-            --block-radius: 6px;
-            --block-gap: 2px;
+            --block-radius: 8px;
+            --block-gap: 3px;
             --marker-opacity: 0.05;
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212; --surface-color: #1e1e1e;
-            --text-main: #f5f5f5; --text-muted: #a3a3a3;
-            --border-color: #333333; --shadow: 0 15px 35px -5px rgba(0,0,0,0.5);
-            --modal-bg: rgba(18, 18, 18, 0.85);
-            --block-blank: #262626; --block-blank-hover: #3a3a3a; 
+            --bg-color: #0f1115; --surface-color: rgba(26, 29, 36, 0.85);
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --border-color: rgba(51, 65, 85, 0.6); --shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            --modal-bg: rgba(15, 17, 21, 0.95);
+            --block-blank: #1e222a; --block-blank-hover: #2d333b; 
         }
 
         [data-theme="amoled"] {
-            --bg-color: #000000; --surface-color: #0a0a0a;
-            --text-main: #ffffff; --text-muted: #888888;
-            --border-color: #1a1a1a; --shadow: 0 20px 40px rgba(0,0,0,0.8);
-            --modal-bg: rgba(0, 0, 0, 0.95);
-            --block-blank: #111111; --block-blank-hover: #222222; 
+            --bg-color: #000000; --surface-color: rgba(10, 10, 10, 0.85);
+            --text-main: #ffffff; --text-muted: #666666;
+            --border-color: rgba(26, 26, 26, 0.8); --shadow: 0 30px 60px rgba(0,0,0,0.9);
+            --modal-bg: rgba(0, 0, 0, 0.98);
+            --block-blank: #0a0a0a; --block-blank-hover: #1a1a1a; 
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', 'Tajawal', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden; width: 100%; max-width: 100%; padding: 2rem 1rem 1rem 1rem; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', 'Tajawal', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: background-color 0.5s ease, color 0.5s ease; overflow-x: hidden; width: 100%; max-width: 100%; padding: 2rem 1rem 1rem 1rem; }
         
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
@@ -58,254 +63,285 @@
         #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
         .particle { position: absolute; opacity: 0; pointer-events: none; will-change: transform, opacity; }
 
-        .icon { width: 20px; height: 20px; fill: currentColor; display: inline-block; vertical-align: middle; }
-        .icon-sm { width: 16px; height: 16px; }
-        .icon-lg { width: 24px; height: 24px; }
+        .icon { width: 22px; height: 22px; fill: currentColor; display: inline-block; vertical-align: middle; transition: var(--transition); }
+        .icon-sm { width: 18px; height: 18px; }
+        .icon-lg { width: 28px; height: 28px; }
 
-        .app-wrapper { width: 100%; max-width: 1000px; z-index: 1; display: flex; flex-direction: column; gap: 2rem; position: relative; overflow-x: hidden; min-height: calc(100vh - 4rem); }
-        .app-header { text-align: center; }
-        .app-title { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin-bottom: -5px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .app-signature { font-family: 'Dancing Script', cursive; font-size: clamp(1rem, 2.5vw, 1.4rem); color: var(--primary); opacity: 0.9; }
+        .app-wrapper { width: 100%; max-width: 1000px; z-index: 1; display: flex; flex-direction: column; gap: 2.5rem; position: relative; overflow-x: hidden; min-height: calc(100vh - 4rem); }
+        .app-header { text-align: center; margin-bottom: -10px; }
+        /* تم تكبير العنوان والاسم هنا */
+        .app-title { font-size: clamp(3rem, 7vw, 4.5rem); font-weight: 800; letter-spacing: 6px; text-transform: uppercase; margin-bottom: -5px; line-height: 1; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .app-signature { font-family: 'Dancing Script', cursive; font-size: clamp(1.4rem, 3.5vw, 1.8rem); color: var(--primary); opacity: 0.9; }
 
-        .glass-panel { background: var(--surface-color); padding: clamp(1.5rem, 3vw, 2.5rem); border-radius: 24px; box-shadow: var(--shadow); border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: var(--transition); width: 100%; }
+        .glass-panel { background: var(--surface-color); padding: clamp(1.8rem, 4vw, 3rem); border-radius: 32px; box-shadow: var(--shadow); border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: var(--transition); width: 100%; }
+        .glass-panel:hover { border-color: rgba(255,255,255,0.1); }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; width: 100%; }
-        .color-palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .color-picker-wrapper { position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border-color); cursor: pointer; flex-shrink: 0; background: var(--bg-color); transition: var(--transition); }
-        .color-picker-wrapper:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--primary-glow); border-color: var(--primary); }
-        .swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
-        .swatch.active { border-color: var(--text-main); transform: scale(1.15); box-shadow: 0 0 12px var(--primary-glow); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; width: 100%; }
+        .color-palette { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .color-picker-wrapper { position: relative; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border-color); cursor: pointer; flex-shrink: 0; background: var(--bg-color); transition: var(--transition); }
+        .color-picker-wrapper:hover { transform: scale(1.15); box-shadow: 0 0 15px var(--primary-glow); border-color: var(--primary); }
+        .swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; transition: var(--transition); border: 2px solid transparent; }
+        .swatch.active { border-color: var(--text-main); transform: scale(1.2); box-shadow: 0 0 15px var(--primary-glow); }
 
-        .mode-switch { position: relative; width: 78px; height: 32px; flex-shrink: 0; background: var(--border-color); border-radius: 30px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
-        .mode-switch svg { width: 14px; height: 14px; fill: var(--text-muted); z-index: 1; transition: fill 0.4s; }
-        .mode-switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; background: var(--text-main); border-radius: 50%; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.4s; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
-        [data-theme="dark"] .mode-switch::after { transform: translateX(23px); background: var(--primary); }
-        [data-theme="amoled"] .mode-switch::after { transform: translateX(46px); background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        .mode-switch { position: relative; width: 84px; height: 36px; flex-shrink: 0; background: var(--bg-color); border-radius: 30px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border: 1px solid var(--border-color); }
+        .mode-switch svg { width: 16px; height: 16px; fill: var(--text-muted); z-index: 1; transition: fill 0.4s; }
+        .mode-switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; background: var(--text-main); border-radius: 50%; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.3);}
+        [data-theme="dark"] .mode-switch::after { transform: translateX(25px); background: var(--primary); }
+        [data-theme="amoled"] .mode-switch::after { transform: translateX(50px); background: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
         [data-theme="dark"] .mode-switch .moon-icon, [data-theme="amoled"] .mode-switch .amoled-icon { fill: var(--surface-color); }
 
-        .timer-section { text-align: center; max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;}
-        .task-input { width: 100%; padding: 12px 0; border: none; border-bottom: 2px solid var(--border-color); background: transparent; color: var(--text-main); font-size: clamp(1.2rem, 3vw, 1.4rem); font-weight: 600; text-align: center; outline: none; transition: var(--transition); margin-bottom: 1.5rem; }
+        .timer-section { text-align: center; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;}
+        .task-input { width: 100%; padding: 14px 0; border: none; border-bottom: 2px solid var(--border-color); background: transparent; color: var(--text-main); font-size: clamp(1.4rem, 4vw, 1.8rem); font-weight: 700; text-align: center; outline: none; transition: var(--transition); margin-bottom: 2rem; }
         .task-input:focus { border-bottom-color: var(--primary); }
-        .phase-text { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 4px; font-weight: 700; margin-bottom: 2rem;}
+        .task-input::placeholder { color: var(--text-muted); opacity: 0.5; font-weight: 500; }
+        .phase-text { font-size: 1.1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 5px; font-weight: 800; margin-bottom: 2.5rem;}
 
-        .timer-display-wrapper { position: relative; padding: 2.5rem 4rem; background: var(--bg-color); border-radius: 28px; overflow: hidden; z-index: 1; min-width: 280px; display: flex; justify-content: center; align-items: center; border: 2px solid var(--border-color); transition: border-color 0.4s, box-shadow 0.4s; box-shadow: inset 0 5px 15px rgba(0,0,0,0.03); }
-        .timer-display-wrapper.running { border-color: transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .timer-display-wrapper { position: relative; padding: 3rem 5rem; background: var(--bg-color); border-radius: 40px; overflow: hidden; z-index: 1; min-width: 320px; display: flex; justify-content: center; align-items: center; border: 2px solid var(--border-color); transition: border-color 0.5s, box-shadow 0.5s, transform 0.3s; box-shadow: inset 0 8px 20px rgba(0,0,0,0.05); }
+        .timer-display-wrapper:hover { transform: scale(1.02); }
+        .timer-display-wrapper.running { border-color: transparent; box-shadow: 0 15px 40px rgba(0,0,0,0.15); transform: scale(1.05); }
         .timer-display-wrapper.running::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(transparent, var(--primary), transparent 25%); animation: rotateGlow 3s linear infinite; z-index: -2; will-change: transform; }
-        .timer-display-wrapper.running::after { content: ''; position: absolute; inset: 3px; background: var(--bg-color); border-radius: 25px; z-index: -1; }
+        .timer-display-wrapper.running::after { content: ''; position: absolute; inset: 4px; background: var(--bg-color); border-radius: 36px; z-index: -1; }
         .timer-display-wrapper.flow::before { background: conic-gradient(transparent, var(--primary), transparent 45%); animation: rotateGlow 1.5s linear infinite; }
         .timer-display-wrapper.flow::after { background: var(--surface-color); }
         
         @keyframes rotateGlow { 100% { transform: rotate(360deg); } }
 
-        .timer-display { font-size: clamp(4.5rem, 12vw, 7rem); font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 0; transition: color 0.4s, text-shadow 0.4s; line-height: 1; letter-spacing: -2px;}
-        .timer-display-wrapper.running .timer-display { color: var(--primary); text-shadow: 0 0 30px var(--primary-glow); }
+        .timer-display { font-size: clamp(5.5rem, 15vw, 8rem); font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 0; transition: color 0.5s, text-shadow 0.5s; line-height: 1; letter-spacing: -3px;}
+        .timer-display-wrapper.running .timer-display { color: var(--primary); text-shadow: 0 0 40px var(--primary-glow); }
         .timer-display-wrapper.flow .timer-display { animation: flowPulseText 2.5s infinite alternate ease-in-out; }
 
-        .controls { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 2.5rem; width: 100%; }
-        .btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); padding: 14px clamp(15px, 4vw, 30px); border-radius: 16px; font-size: clamp(0.9rem, 2vw, 1rem); font-weight: 700; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px; flex: 1; min-width: 110px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn:active { transform: scale(0.94); }
-        .btn-primary { background: var(--text-main); color: var(--surface-color); border-color: var(--text-main); }
-        .btn-primary:hover { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 8px 25px var(--primary-glow); transform: translateY(-3px); }
-        .btn:hover:not(.btn-primary) { border-color: var(--text-muted); transform: translateY(-3px); }
-        .btn-danger { border-color: #ef4444; color: #ef4444; }
-        .btn-danger:hover { background: #ef4444; color: #fff; box-shadow: 0 8px 25px rgba(239,68,68,0.3); }
+        .controls { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 3rem; width: 100%; }
+        .btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); padding: 16px clamp(20px, 5vw, 36px); border-radius: 20px; font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 800; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1.5px; flex: 1; min-width: 130px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn:active { transform: scale(0.92); }
+        .btn-primary { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+        .btn-primary:hover { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 10px 30px var(--primary-glow); transform: translateY(-4px); }
+        .btn:hover:not(.btn-primary) { border-color: var(--text-muted); transform: translateY(-4px); background: var(--bg-color); }
+        .btn-danger { border-color: rgba(239, 68, 68, 0.5); color: #ef4444; }
+        .btn-danger:hover { background: #ef4444; border-color: #ef4444; color: #fff; box-shadow: 0 10px 30px rgba(239,68,68,0.3); }
 
-        .bottom-links { margin-top: 2rem; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
-        .link-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 700; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+        .bottom-links { margin-top: 2.5rem; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; }
+        .link-btn { background: none; border: none; color: var(--text-muted); font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 8px; }
         .link-btn:hover { color: var(--primary); transform: translateY(-2px); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; padding: 1rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; padding: 1rem; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-content { background: var(--surface-color); padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 28px; width: 100%; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; transform: translateY(40px) scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-content { background: var(--surface-color); padding: clamp(2rem, 5vw, 3rem); border-radius: 36px; width: 100%; border: 1px solid var(--border-color); box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3); position: relative; transform: translateY(50px) scale(0.9); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
-        .close-btn { position: absolute; top: 18px; right: 18px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 50%; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; color: var(--text-muted); cursor: pointer; transition: var(--transition); z-index: 10; }
-        .close-btn:hover { color: var(--primary); transform: rotate(90deg); border-color: var(--primary); }
-        .modal-title { font-size: clamp(1.3rem, 3vw, 1.6rem); margin-bottom: 1.5rem; color: var(--text-main); font-weight: 800; display: flex; align-items: center; gap: 10px; }
-
-        .notes-textarea { flex: 1; width: 100%; border: 2px solid var(--border-color); border-radius: 20px; padding: 1.5rem; background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; resize: none; outline: none; transition: var(--transition); line-height: 1.6; }
-        .notes-textarea:focus { border-color: var(--primary); }
         
-        .settings-modal { max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .setting-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        /* Close Buttons (X) enhanced for better visibility */
+        .close-btn { position: absolute; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; color: #ef4444; cursor: pointer; transition: var(--transition); z-index: 10; }
+        .close-btn:hover { background: #ef4444; color: #fff; transform: scale(1.05); border-color: #ef4444; box-shadow: 0 5px 15px rgba(239,68,68,0.3); }
+        
+        .modal-title { font-size: clamp(1.5rem, 4vw, 1.8rem); margin-bottom: 2rem; color: var(--text-main); font-weight: 800; display: flex; align-items: center; gap: 12px; }
+
+        .notes-textarea { flex: 1; width: 100%; border: 2px solid var(--border-color); border-radius: 24px; padding: 1.8rem; background: var(--bg-color); color: var(--text-main); font-size: 1.15rem; resize: none; outline: none; transition: var(--transition); line-height: 1.7; font-weight: 500; }
+        .notes-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-transparent); }
+        
+        .settings-modal { max-width: 550px; max-height: 90vh; overflow-y: auto; }
+        .setting-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--border-color); }
         .setting-label { display: flex; flex-direction: column; }
-        .setting-label span { font-size: 1.05rem; color: var(--text-main); font-weight: 700; }
-        .setting-label small { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
-        .setting-input { width: 70px; padding: 10px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); text-align: center; font-size: 1.05rem; outline: none; font-weight: 700; transition: border-color 0.3s;}
-        .setting-input:focus { border-color: var(--primary); }
+        .setting-label span { font-size: 1.1rem; color: var(--text-main); font-weight: 800; }
+        .setting-label small { font-size: 0.9rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+        .setting-input { width: 80px; padding: 12px; border-radius: 14px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); text-align: center; font-size: 1.1rem; outline: none; font-weight: 800; transition: var(--transition);}
+        .setting-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-transparent); }
         
-        .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .toggle-switch { position: relative; display: inline-block; width: 52px; height: 28px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 26px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: var(--text-main); transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 30px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: var(--text-main); transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(22px); background-color: #fff; }
+        input:checked + .slider:before { transform: translateX(24px); background-color: #fff; }
         
-        .vol-slider { flex: 1; max-width: 150px; accent-color: var(--primary); cursor: pointer; }
+        .vol-slider { flex: 1; max-width: 160px; accent-color: var(--primary); cursor: pointer; }
         
-        .action-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.5rem; }
-        .action-btn { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 14px; cursor: pointer; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; transition: var(--transition);}
-        .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
+        .action-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 2rem; }
+        .action-btn { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border-color); padding: 14px; border-radius: 16px; cursor: pointer; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 10px; transition: var(--transition); font-size: 1.05rem;}
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08);}
 
-        .stats-modal { max-width: 1100px; height: 85vh; display: flex; flex-direction: column; }
-        .stats-content { display: flex; gap: 2rem; flex: 1; min-height: 0; }
-        .chart-section { flex: 1.2; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 20px; padding: 1.5rem; min-height: 200px; border: 1px solid var(--border-color);}
-        .history-section { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; min-height: 0; }
-        .date-select-container { display: flex; gap: 12px; }
-        .date-select { flex: 1; padding: 14px; border-radius: 14px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1.05rem; outline: none; font-weight: 700; transition: var(--transition);}
-        .date-select:focus { border-color: var(--primary); }
-        .add-session-btn { background: var(--primary); color: #fff; border: none; border-radius: 14px; padding: 0 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition);}
-        .add-session-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--primary-glow); }
-        .sessions-list { flex: 1; overflow-y: auto; background: var(--bg-color); border-radius: 20px; padding: 1rem; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);}
-        .session-item { padding: 1.2rem; border: 1px solid var(--border-color); border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface-color); transition: transform 0.2s;}
-        .session-item:hover { transform: translateX(5px); }
-        .session-item.distraction { border-left: 4px solid #ef4444; }
+        .stats-modal { max-width: 1200px; height: 88vh; display: flex; flex-direction: column; }
+        .stats-content { display: flex; gap: 2.5rem; flex: 1; min-height: 0; }
+        .chart-section { flex: 1.3; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 28px; padding: 2rem; min-height: 250px; border: 1px solid var(--border-color); box-shadow: inset 0 5px 15px rgba(0,0,0,0.02);}
+        .history-section { flex: 1; display: flex; flex-direction: column; gap: 1.8rem; min-height: 0; }
+        .date-select-container { display: flex; gap: 14px; }
+        .date-select { flex: 1; padding: 16px; border-radius: 16px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: var(--transition); cursor: pointer;}
+        .date-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-transparent); }
+        .add-session-btn { background: var(--primary); color: #fff; border: none; border-radius: 16px; padding: 0 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition);}
+        .add-session-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 20px var(--primary-glow); }
+        .sessions-list { flex: 1; overflow-y: auto; background: var(--bg-color); border-radius: 28px; padding: 1.5rem; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border-color); box-shadow: inset 0 5px 15px rgba(0,0,0,0.02);}
+        .session-item { padding: 1.4rem; border: 1px solid var(--border-color); border-radius: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--surface-color); transition: var(--transition);}
+        .session-item:hover { transform: translateX(8px); border-color: var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .session-item.distraction { border-left: 5px solid #ef4444; }
         .s-info { flex: 1; }
-        .s-name { font-weight: 700; color: var(--text-main); font-size: 1.05rem; }
-        .s-meta { font-size: 0.85rem; color: var(--text-muted); display: inline-block; background: var(--bg-color); padding: 4px 10px; border-radius: 8px; margin-top: 8px; font-weight: 600; }
+        .s-name { font-weight: 800; color: var(--text-main); font-size: 1.1rem; margin-bottom: 6px; }
+        .s-meta { font-size: 0.9rem; color: var(--text-muted); display: inline-block; background: var(--bg-color); padding: 6px 12px; border-radius: 10px; font-weight: 700; border: 1px solid var(--border-color); }
         
-        .exec-score-banner { display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); padding: 1.2rem 1.8rem; border-radius: 20px; border: 1px solid var(--border-color); }
-        .exec-info h3 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-        .exec-info p { font-size: 1.6rem; font-weight: 800; color: var(--text-main); line-height: 1;}
-        .exec-circle { width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800; color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: background-color 0.4s;}
+        .exec-score-banner { display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); padding: 1.5rem 2rem; border-radius: 28px; border: 1px solid var(--border-color); box-shadow: inset 0 5px 15px rgba(0,0,0,0.02); }
+        .exec-info h3 { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 800;}
+        .exec-info p { font-size: 1.8rem; font-weight: 800; color: var(--text-main); line-height: 1;}
+        .exec-circle { width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transition: background-color 0.5s, transform 0.3s;}
+        .exec-circle:hover { transform: scale(1.1) rotate(5deg); }
         .score-high { background: #10b981; } .score-med { background: #f59e0b; } .score-low { background: #ef4444; }
 
-        .timeline-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 2px solid var(--border-color); flex-wrap: wrap; gap: 1rem; }
-        .timeline-title { font-size: clamp(1.3rem, 3vw, 1.6rem); font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
-        .timeline-tools { display: flex; gap: 0.5rem; }
-        .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
-        .tool-btn:active { transform: scale(0.92); }
-        .tool-btn:hover:not(:disabled) { background: var(--border-color); color: var(--text-main); }
-        .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .timeline-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); flex-wrap: wrap; gap: 1.5rem; }
+        .timeline-title { font-size: clamp(1.5rem, 4vw, 1.8rem); font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 14px; }
+        .timeline-tools { display: flex; gap: 8px; }
+        .tool-btn { width: 44px; height: 44px; border-radius: 14px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
+        .tool-btn:active { transform: scale(0.9); }
+        .tool-btn:hover:not(:disabled) { background: var(--primary-transparent); color: var(--primary); border-color: var(--primary); transform: translateY(-2px); }
+        .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .timeline-date-controls { display: flex; gap: 8px; align-items: center; }
-        .timeline-date-controls input[type="date"] { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 10px; outline: none; font-weight: 700; cursor: pointer; transition: var(--transition); font-family: inherit; }
-        .timeline-date-controls input[type="date"]:focus { border-color: var(--primary); }
+        .timeline-date-controls { display: flex; gap: 10px; align-items: center; }
+        .timeline-date-controls input[type="date"] { background: var(--bg-color); border: 2px solid var(--border-color); color: var(--text-main); padding: 8px 14px; border-radius: 14px; outline: none; font-weight: 800; cursor: pointer; transition: var(--transition); font-family: inherit; font-size: 1rem; }
+        .timeline-date-controls input[type="date"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-transparent); }
 
-        .timeline-wrapper { position: relative; width: 100%; border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; background: var(--surface-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.02); transition: opacity 0.3s;}
-        .playhead { position: absolute; left: 0; width: 100%; height: 2px; background: var(--primary); z-index: 50; pointer-events: none; box-shadow: 0 0 15px var(--primary-glow); display: none; will-change: top; transition: top 1s linear; }
-        .playhead::before { content: ''; position: absolute; left: 0; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+        .timeline-wrapper { position: relative; width: 100%; border: 2px solid var(--border-color); border-radius: 28px; overflow: hidden; background: var(--bg-color); box-shadow: inset 0 5px 20px rgba(0,0,0,0.03); transition: opacity 0.4s;}
+        .playhead { position: absolute; left: 0; width: 100%; height: 3px; background: var(--primary); z-index: 50; pointer-events: none; box-shadow: 0 0 20px var(--primary-glow); display: none; will-change: top; transition: top 1s linear; }
+        .playhead::before { content: ''; position: absolute; left: 0; top: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 20px var(--primary-glow); }
 
-        .hour-row { display: flex; border-bottom: 1px solid var(--border-color); }
+        .hour-row { display: flex; border-bottom: 2px solid var(--border-color); }
         .hour-row:last-child { border-bottom: none; }
-        .hour-label { width: clamp(60px, 12vw, 85px); flex-shrink: 0; padding: 0.5rem 0.2rem; font-size: clamp(0.75rem, 2vw, 0.85rem); font-weight: 700; color: var(--text-muted); border-right: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; text-align: center; background: var(--bg-color); flex-direction: column; line-height: 1.2;}
+        .hour-label { width: clamp(70px, 14vw, 95px); flex-shrink: 0; padding: 0.8rem 0.4rem; font-size: clamp(0.85rem, 2.5vw, 1rem); font-weight: 800; color: var(--text-muted); border-right: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; text-align: center; background: var(--surface-color); flex-direction: column; line-height: 1.2; letter-spacing: 1px;}
         
-        .blocks-grid { flex: 1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--block-gap); padding: var(--block-gap); background: var(--surface-color); align-content: start;}
+        .blocks-grid { flex: 1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--block-gap); padding: var(--block-gap); background: var(--bg-color); align-content: start;}
         
-        .time-block { width: 100%; box-sizing: border-box; height: clamp(38px, 8vw, 46px); background-color: var(--block-blank); border-radius: var(--block-radius); cursor: pointer; transition: background-color 0.3s ease, border 0.3s, opacity 0.2s; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;}
-        .time-block:hover { background-color: var(--block-blank-hover); }
-        .time-block.selected { box-shadow: inset 0 0 0 3px var(--selection-border); z-index: 5; opacity: 0.85; }
+        .time-block { width: 100%; box-sizing: border-box; height: clamp(42px, 9vw, 52px); background-color: var(--block-blank); border-radius: var(--block-radius); cursor: pointer; transition: transform 0.2s, background-color 0.3s ease, border 0.3s, opacity 0.2s; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; border: 2px solid transparent;}
+        .time-block:hover { background-color: var(--block-blank-hover); transform: scale(1.05); z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .time-block.selected { box-shadow: inset 0 0 0 4px var(--selection-border); z-index: 5; opacity: 0.9; transform: scale(1.02); }
         
-        @keyframes breatheBorder { 0% { border-color: transparent; } 50% { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-transparent); } 100% { border-color: transparent; } }
-        .time-block.is-now { border: 2px dashed var(--primary); animation: breatheBorder 2.5s infinite ease-in-out; z-index: 4; }
+        @keyframes breatheBorder { 0% { border-color: transparent; } 50% { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-transparent); } 100% { border-color: transparent; } }
+        .time-block.is-now { border: 3px dashed var(--primary); animation: breatheBorder 2.5s infinite ease-in-out; z-index: 4; }
 
-        .time-block.work.planned { background-color: var(--primary-transparent); border-color: var(--primary); color: var(--text-main); }
-        .time-block.work.actual { background-color: var(--primary); border-color: var(--primary); color: #fff; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
-        .time-block.rest.planned { background-color: var(--rest-transparent); border-color: var(--rest-color); color: var(--text-main); }
-        .time-block.rest.actual { background-color: var(--rest-color); border-color: var(--rest-color); color: #fff; }
-        .time-block.neutral { background-color: var(--border-color); opacity: 0.8; color: var(--text-main); }
+        .time-block.work.planned { background-color: var(--primary-transparent); border-color: rgba(255, 71, 87, 0.4); color: var(--text-main); }
+        .time-block.work.actual { background-color: var(--primary); border-color: var(--primary); color: #fff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+        .time-block.rest.planned { background-color: var(--rest-transparent); border-color: rgba(16, 185, 129, 0.4); color: var(--text-main); }
+        .time-block.rest.actual { background-color: var(--rest-color); border-color: var(--rest-color); color: #fff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+        .time-block.neutral { background-color: var(--border-color); opacity: 0.85; color: var(--text-main); }
 
-        .block-title { font-size: 0.7rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; padding: 0 4px; max-width: 100%; display: block; text-align: center; }
-        .time-block.actual .block-title { text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+        .block-title { font-size: 0.75rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; padding: 0 6px; max-width: 100%; display: block; text-align: center; letter-spacing: 0.5px; }
+        .time-block.actual .block-title { text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 
-        .custom-tag { position: absolute; top: -6px; right: -6px; font-size: 11px; font-weight: 800; line-height: 1; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2)); pointer-events: none; z-index: 2; background: var(--surface-color); border-radius: 5px; padding: 3px 5px; border: 1px solid var(--border-color);}
+        .custom-tag { position: absolute; top: -8px; right: -8px; font-size: 13px; font-weight: 800; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); pointer-events: none; z-index: 12; background: var(--surface-color); border-radius: 8px; padding: 4px 6px; border: 1px solid var(--border-color); transition: transform 0.3s;}
+        .time-block:hover .custom-tag { transform: scale(1.2) rotate(5deg); }
         
-        .time-block::after { content: attr(data-tooltip); position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--surface-color); padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 20; box-shadow: 0 8px 20px rgba(0,0,0,0.2);}
+        .time-block::after { content: attr(data-tooltip); position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text-main); color: var(--bg-color); padding: 8px 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; white-space: nowrap; pointer-events: none; opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
         
         @media (hover: hover) {
-            .time-block:hover::after { opacity: 1; }
+            .time-block:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* --- Custom Timeline Markers Options --- */
-        .timeline-wrapper.show-markers[data-marker-style="border"] .time-block:nth-child(3n):not(:last-child) { border-right: 2px solid var(--text-muted); }
+        .timeline-wrapper.show-markers[data-marker-style="border"] .time-block:nth-child(3n):not(:last-child) { border-right: 2px solid var(--border-color); }
         .timeline-wrapper.show-markers[data-marker-style="border"] .time-block:nth-child(6) { border-right: 3px solid var(--primary); }
         
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(3)::before,
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(6)::before,
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(9)::before,
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(12)::before {
-            position: absolute;
-            font-size: clamp(1.6rem, 4vw, 2.5rem);
-            font-weight: 800;
-            color: var(--text-main);
-            opacity: var(--marker-opacity);
-            pointer-events: none;
-            z-index: 1;
-            line-height: 1;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: absolute; font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; color: var(--text-main); opacity: var(--marker-opacity); pointer-events: none; z-index: 1; line-height: 1; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(3)::before { content: '15'; }
-        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(6)::before { content: '30'; font-size: clamp(1.8rem, 4.5vw, 2.8rem); opacity: calc(var(--marker-opacity) + 0.03); color: var(--primary); }
+        .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(6)::before { content: '30'; font-size: clamp(2rem, 5.5vw, 3.5rem); opacity: calc(var(--marker-opacity) + 0.05); color: var(--primary); }
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(9)::before { content: '45'; }
         .timeline-wrapper.show-markers[data-marker-style="text"] .time-block:nth-child(12)::before { content: '60'; }
 
-        /* FAB */
-        .fab-customize { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(150px); background: var(--text-main); color: var(--surface-color); padding: 16px 32px; border-radius: 30px; font-size: 1.15rem; font-weight: 800; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: none; display: flex; align-items: center; gap: 12px; cursor: pointer; z-index: 150; opacity: 0; pointer-events: none; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; }
+        /* Enhanced FAB */
+        .fab-customize { position: fixed; bottom: clamp(30px, 8vh, 80px); left: 50%; transform: translateX(-50%) translateY(150px); background: var(--text-main); color: var(--bg-color); padding: 18px 40px; border-radius: 40px; font-size: 1.25rem; font-weight: 800; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 14px; cursor: pointer; z-index: 150; opacity: 0; pointer-events: none; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .fab-customize.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
-        .fab-customize:active { transform: translateX(-50%) translateY(5px) scale(0.95); }
-        .fab-customize .badge { background: var(--surface-color); color: var(--text-main); padding: 2px 10px; border-radius: 12px; font-size: 0.95rem; }
+        .fab-customize:hover { transform: translateX(-50%) translateY(-5px) scale(1.05); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .fab-customize:active { transform: translateX(-50%) translateY(2px) scale(0.95); }
+        .fab-customize .badge { background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 14px; font-size: 1rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
 
-        /* Action Panel */
-        .action-panel { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-color); border-top: 1px solid var(--border-color); border-radius: 30px 30px 0 0; padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom)) 1.5rem; box-shadow: 0 -15px 50px rgba(0, 0, 0, 0.2); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 200; transform: translateY(100%); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); max-height: 90vh; overflow-y: auto;}
+        /* Enhanced Action Panel with explicit close button styling */
+        .action-panel { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-color); border-top: 1px solid var(--border-color); border-radius: 40px 40px 0 0; padding: 2rem 2rem calc(2rem + env(safe-area-inset-bottom)) 2rem; box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.4); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 200; transform: translateY(105%); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); max-height: 92vh; overflow-y: auto; }
         .action-panel.visible { transform: translateY(0); }
-        .panel-drag-handle { width: 50px; height: 5px; background: var(--border-color); border-radius: 5px; margin: 0 auto 1.5rem auto; }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
-        .panel-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
-        .panel-content { display: flex; flex-direction: column; gap: 1.2rem; max-width: 1000px; margin: 0 auto; width: 100%;}
-        .panel-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        .panel-drag-handle { width: 60px; height: 6px; background: var(--border-color); border-radius: 6px; margin: 0 auto 2rem auto; transition: background 0.3s; }
+        .action-panel:active .panel-drag-handle { background: var(--text-muted); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1.5rem; }
+        .panel-title { font-weight: 800; font-size: 1.4rem; color: var(--text-main); display: flex; align-items: center; gap: 12px; letter-spacing: 1px; }
+        .panel-content { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1000px; margin: 0 auto; width: 100%;}
+        .panel-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
         
-        .input-group { flex-grow: 1; display: flex; align-items: center; gap: 1rem; background: var(--bg-color); padding: 10px 14px; border-radius: 16px; border: 1px solid var(--border-color); transition: var(--transition); flex-wrap: wrap; }
-        .input-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
-        .input-group input[type="text"] { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 1.05rem; font-weight: 600; min-width: 150px;}
-        select.styled-select { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; outline: none; font-weight: 700; cursor: pointer; transition: var(--transition);}
-        select.styled-select:focus { border-color: var(--primary); }
-        .color-divider { width: 1px; height: 24px; background: var(--border-color); margin: 0 6px; }
+        .input-group { flex-grow: 1; display: flex; align-items: center; gap: 1.2rem; background: var(--bg-color); padding: 12px 18px; border-radius: 20px; border: 2px solid var(--border-color); transition: var(--transition); flex-wrap: wrap; }
+        .input-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-transparent); }
+        .input-group input[type="text"] { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 1.15rem; font-weight: 700; min-width: 180px;}
+        select.styled-select { background: var(--surface-color); border: 2px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 14px; outline: none; font-weight: 800; cursor: pointer; transition: var(--transition); font-size: 1rem; }
+        select.styled-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-transparent); }
+        .color-divider { width: 2px; height: 30px; background: var(--border-color); margin: 0 8px; border-radius: 2px; }
 
-        .micro-tasks-container { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.2rem; display: flex; flex-direction: column; gap: 10px; }
-        .micro-tasks-container h4 { margin: 0; font-size: 1rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; font-weight: 700;}
-        .task-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; padding-right: 5px;}
-        .subtask-item { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: 500; background: var(--surface-color); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); transition: var(--transition);}
-        .subtask-item:hover { border-color: var(--primary-glow); }
-        .subtask-item input[type="checkbox"] { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer;}
-        .subtask-input-wrapper { display: flex; gap: 8px; margin-top: 6px; }
-        .subtask-input-wrapper input { flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-main); outline: none; font-weight: 600; transition: border-color 0.3s;}
-        .subtask-input-wrapper input:focus { border-color: var(--primary); }
-        .subtask-input-wrapper button { background: var(--text-main); color: var(--surface-color); border: none; border-radius: 12px; padding: 0 16px; font-weight: 800; font-size: 1.2rem; cursor: pointer; transition: var(--transition);}
-        .subtask-input-wrapper button:hover { background: var(--primary); transform: scale(1.05);}
+        .micro-tasks-container { background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 24px; padding: 1.5rem; display: flex; flex-direction: column; gap: 14px; }
+        .micro-tasks-container h4 { margin: 0; font-size: 1.1rem; color: var(--text-muted); display: flex; align-items: center; gap: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .task-list { display: flex; flex-direction: column; gap: 10px; max-height: 160px; overflow-y: auto; padding-right: 8px;}
+        .subtask-item { display: flex; align-items: center; gap: 12px; font-size: 1.1rem; font-weight: 600; background: var(--surface-color); padding: 10px 16px; border-radius: 16px; border: 2px solid var(--border-color); transition: var(--transition);}
+        .subtask-item:hover { border-color: var(--primary-transparent); transform: translateX(5px); }
+        .subtask-item input[type="checkbox"] { accent-color: var(--primary); width: 22px; height: 22px; cursor: pointer; transition: transform 0.2s; }
+        .subtask-item input[type="checkbox"]:active { transform: scale(0.8); }
+        .subtask-input-wrapper { display: flex; gap: 10px; margin-top: 8px; }
+        .subtask-input-wrapper input { flex: 1; padding: 12px 18px; border-radius: 16px; border: 2px solid var(--border-color); background: var(--surface-color); color: var(--text-main); outline: none; font-weight: 700; transition: var(--transition); font-size: 1.05rem; }
+        .subtask-input-wrapper input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-transparent); }
+        .subtask-input-wrapper button { background: var(--text-main); color: var(--bg-color); border: none; border-radius: 16px; padding: 0 20px; font-weight: 800; font-size: 1.5rem; cursor: pointer; transition: var(--transition);}
+        .subtask-input-wrapper button:hover { background: var(--primary); transform: scale(1.08) rotate(90deg); color: #fff; }
 
-        .btn-group { display: flex; gap: 10px; width: 100%; justify-content: flex-end; margin-top: 0.5rem; }
-        .btn-panel { padding: 12px 20px; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 100px;}
-        .btn-panel:active { transform: scale(0.95); }
-        .bp-save { background-color: var(--text-main); color: var(--surface-color); }
-        .bp-save:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .bp-clear { background-color: var(--block-blank-hover); color: var(--text-main); border: 1px solid var(--border-color); }
-        .bp-shift { background-color: var(--primary-transparent); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-group { display: flex; gap: 14px; width: 100%; justify-content: flex-end; margin-top: 1rem; }
+        .btn-panel { padding: 16px 28px; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; min-width: 120px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-panel:active { transform: scale(0.92); }
+        .bp-save { background-color: var(--text-main); color: var(--bg-color); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .bp-save:hover { background-color: var(--primary); color: #fff; box-shadow: 0 15px 30px var(--primary-glow); transform: translateY(-3px); }
+        .bp-clear { background-color: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
+        .bp-clear:hover { border-color: var(--text-muted); background: var(--bg-color); }
+        .bp-shift { background-color: var(--primary-transparent); color: var(--primary); border: 2px solid var(--primary); }
+        .bp-shift:hover { background-color: var(--primary); color: #fff; box-shadow: 0 10px 25px var(--primary-glow); }
 
-        .app-footer { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding-top: 2rem; border-top: 1px dashed var(--border-color); margin-top: auto; font-weight: 600; letter-spacing: 1px; width: 100%; max-width: 1000px; }
+        .auth-overlay { position: fixed; inset: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); padding: 1rem; backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px); }
+        .auth-box { background: var(--surface-color); padding: 4rem 3rem; border-radius: 40px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); width: 100%; max-width: 420px; text-align: center; position: relative; overflow: hidden; }
+        .auth-box::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, var(--primary-transparent) 0%, transparent 60%); z-index: -1; opacity: 0.5; }
+        .auth-input { width: 100%; padding: 16px; margin-bottom: 1.5rem; border-radius: 16px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1.15rem; outline: none; transition: var(--transition); text-align: center; font-weight: 700; }
+        .auth-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-transparent); transform: scale(1.02); }
+        .auth-btn { width: 100%; padding: 18px; background: var(--primary); color: #fff; border: none; border-radius: 16px; font-size: 1.2rem; font-weight: 800; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 2px; }
+        .auth-btn:hover { transform: translateY(-4px); box-shadow: 0 15px 35px var(--primary-glow); }
+        .auth-status { margin-top: 1.5rem; color: #ef4444; font-size: 1rem; font-weight: 700; height: 24px; }
+        
+        .sync-indicator { position: fixed; top: 1.5rem; right: 1.5rem; font-size: 0.85rem; font-weight: 800; color: var(--text-muted); display: flex; align-items: center; gap: 8px; z-index: 100; transition: all 0.4s; opacity: 0; background: var(--surface-color); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .sync-indicator.syncing { opacity: 1; color: var(--primary); border-color: var(--primary-transparent); }
+        .sync-indicator.synced { opacity: 1; color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .sync-indicator.syncing svg { animation: spin 1s linear infinite; }
+
+        .bp-slice { background-color: transparent; color: var(--text-main); border: 2px dashed var(--border-color); }
+        .bp-slice.active-slice { border-color: var(--primary); color: var(--primary); border-style: solid; background: var(--primary-transparent); }
+        
+        .time-block.selected.chain-start { border-top-left-radius: var(--block-radius); border-bottom-left-radius: var(--block-radius); }
+        .time-block.selected.chain-end { border-top-right-radius: var(--block-radius); border-bottom-right-radius: var(--block-radius); }
+        .time-block.selected:not(.chain-start):not(.chain-end) { border-radius: 2px; }
+        
+        .app-footer { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding-top: 2.5rem; border-top: 2px dashed var(--border-color); margin-top: auto; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; width: 100%; max-width: 1000px; }
+        .realtime-indicator { font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 0.8rem; font-weight: 800; letter-spacing: 1px; }
+        .realtime-indicator .dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 12px rgba(16, 185, 129, 0.8); animation: pulseDot 2s infinite; }
+        @keyframes pulseDot { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) { 
             .btn-group { flex-wrap: wrap; }
-            .action-panel { padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)) 1rem; }
-            .panel-content { gap: 0.8rem; }
-            .micro-tasks-container { padding: 0.8rem; }
-            .input-group { flex-direction: column; align-items: flex-start; }
-            .input-group > div { width: 100%; display: flex; align-items: center; justify-content: space-between;}
+            .action-panel { padding: 1.5rem 1.2rem calc(1.5rem + env(safe-area-inset-bottom)) 1.2rem; }
+            .panel-content { gap: 1rem; }
+            .micro-tasks-container { padding: 1.2rem; }
+            .input-group { flex-direction: column; align-items: stretch; }
+            .input-group > div { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;}
             .color-divider { display: none; }
             .stats-content { flex-direction: column; }
-            .chart-section { flex: none; height: 250px; }
+            .chart-section { flex: none; height: 280px; }
             .stats-modal { height: 95vh; }
-            .exec-score-banner { flex-direction: column; gap: 1rem; text-align: center; }
+            .exec-score-banner { flex-direction: column; gap: 1.5rem; text-align: center; }
+            .app-title { font-size: 3.5rem; }
+            .timer-display { font-size: 5rem; }
+            .timer-display-wrapper { padding: 2rem 3rem; min-width: 280px; }
             
             .blocks-grid[data-grid="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
             .blocks-grid[data-grid="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .blocks-grid[data-grid="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             
-            .blocks-grid[data-grid="4"] .time-block { height: 40px; }
-            .blocks-grid[data-grid="3"] .time-block { height: 38px; }
+            .blocks-grid[data-grid="4"] .time-block { height: 46px; }
+            .blocks-grid[data-grid="3"] .time-block { height: 44px; }
             
             .hour-row { height: auto; align-items: stretch; }
-            .time-block { height: 44px; } 
+            .time-block { height: 50px; } 
 
             .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(3n) { border-right: none; }
             .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(6) { border-bottom: 2px dashed var(--border-color); }
@@ -339,6 +375,21 @@
     </svg>
 
     <div id="particles"></div>
+    <div id="syncStatus" class="sync-indicator">
+        <svg class="icon-sm" id="syncIcon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        <span id="syncText">Synced</span>
+    </div>
+
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-box">
+            <h1 style="font-size: 3rem; font-weight: 800; letter-spacing: 4px; margin-bottom: 0.5rem; color: var(--text-main);">PRAX</h1>
+            <p style="color: var(--text-muted); font-weight: 700; margin-bottom: 2.5rem; letter-spacing: 1px; text-transform: uppercase;">Private Sync Portal</p>
+            <input type="email" id="authEmail" class="auth-input" placeholder="Admin Email" autocomplete="email">
+            <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="current-password">
+            <button class="auth-btn" id="loginBtn">Authenticate <svg class="icon" style="margin-left:8px;"><use href="#icon-check"></use></svg></button>
+            <div id="authStatus" class="auth-status"></div>
+        </div>
+    </div>
 
     <div class="app-wrapper">
         <div class="app-header">
@@ -349,7 +400,7 @@
         <div class="glass-panel timer-section">
             <div class="top-bar">
                 <div class="color-palette" id="main-palette"></div>
-                <div class="mode-switch" onclick="cycleTheme()" title="Toggle Theme">
+                <div class="mode-switch" onclick="triggerHaptic(20); cycleTheme()" title="Toggle Theme">
                     <svg class="sun-icon"><use href="#icon-sun"></use></svg>
                     <svg class="moon-icon"><use href="#icon-moon"></use></svg>
                     <svg class="amoled-icon"><use href="#icon-amoled"></use></svg>
@@ -362,26 +413,28 @@
             <div class="timer-display-wrapper" id="timerWrapper">
                 <div class="timer-display" id="timeDisplay">25:00</div>
             </div>
+            
+            <div class="realtime-indicator" id="realtimeIndicator" style="display:none;"><div class="dot"></div> Live Session Syncing</div>
 
             <div class="controls">
                 <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">
                     <svg class="icon"><use href="#icon-play"></use></svg> Start
                 </button>
-                <button class="btn btn-danger" id="distractBtn" onclick="logDistraction()" style="display: none; flex: 0.5; min-width: 50px;" title="Log Distraction">
+                <button class="btn btn-danger" id="distractBtn" onclick="logDistraction()" style="display: none; flex: 0.5; min-width: 60px;" title="Log Distraction">
                     <svg class="icon"><use href="#icon-distraction"></use></svg>
                 </button>
                 <button class="btn btn-flow" id="flowBtn" onclick="toggleFlowMode()">
                     <svg class="icon"><use href="#icon-flow"></use></svg> Flow 
                 </button>
-                <button class="btn" onclick="resetTimer()">
+                <button class="btn" onclick="triggerHaptic(40); resetTimer()">
                     <svg class="icon"><use href="#icon-reset"></use></svg> Reset
                 </button>
             </div>
 
             <div class="bottom-links">
                 <button class="link-btn" onclick="triggerHaptic(); openModal('notesModal')"><svg class="icon-sm"><use href="#icon-notes"></use></svg> Notes</button>
-                <button class="link-btn" onclick="triggerHaptic(); openModal('settingsModal')"><svg class="icon-sm"><use href="#icon-settings"></use></svg> Timer Settings</button>
-                <button class="link-btn" onclick="triggerHaptic(); openModal('statsModal'); loadFullStats();"><svg class="icon-sm"><use href="#icon-stats"></use></svg> Statistics</button>
+                <button class="link-btn" onclick="triggerHaptic(); openModal('settingsModal')"><svg class="icon-sm"><use href="#icon-settings"></use></svg> Settings</button>
+                <button class="link-btn" onclick="triggerHaptic(); openModal('statsModal'); loadFullStats();"><svg class="icon-sm"><use href="#icon-stats"></use></svg> Stats</button>
             </div>
         </div>
 
@@ -391,21 +444,21 @@
                     <svg class="icon-lg" style="color: var(--primary)"><use href="#icon-timeline"></use></svg> 
                     <span id="timeline-title-text">Daily Time Blocks</span>
                     <div class="timeline-date-controls">
-                        <input type="date" id="timelineDatePicker" onchange="loadTimelineForDate(this.value)" title="View Past Records">
-                        <button class="tool-btn" id="btn-go-today" title="Back to Today" onclick="loadTimelineForDate(getToday())" style="display:none; width:32px; height:32px;"><svg class="icon-sm"><use href="#icon-reset"></use></svg></button>
+                        <input type="date" id="timelineDatePicker" onchange="triggerHaptic(20); loadTimelineForDate(this.value)" title="View Past Records">
+                        <button class="tool-btn" id="btn-go-today" title="Back to Today" onclick="triggerHaptic(); loadTimelineForDate(getToday())" style="display:none; width:36px; height:36px;"><svg class="icon-sm"><use href="#icon-reset"></use></svg></button>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
-                    <div class="timeline-stats">
-                        <div title="Focus Blocks (Planned/Actual)">Work: <span id="stat-work">0</span>m</div>
-                        <div title="Rest Blocks">Rest: <span id="stat-rest">0</span>m</div>
+                <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                    <div class="timeline-stats" style="display:flex; gap: 1rem; font-weight: 800; font-size: 0.95rem;">
+                        <div title="Focus Blocks (Planned/Actual)">Work: <span id="stat-work" style="color:var(--text-main);">0</span>m</div>
+                        <div title="Rest Blocks">Rest: <span id="stat-rest" style="color:var(--rest-color);">0</span>m</div>
                     </div>
                     <div class="timeline-tools">
-                        <button class="tool-btn edit-tool" id="btn-timeline-settings" title="Timeline Settings" onclick="openModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-timeline-settings"></use></svg></button>
+                        <button class="tool-btn edit-tool" id="btn-timeline-settings" title="Timeline Settings" onclick="triggerHaptic(); openModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-timeline-settings"></use></svg></button>
                         <button class="tool-btn" id="btn-jump-now" title="Jump to Current Time" onclick="scrollToNow()"><svg class="icon"><use href="#icon-flow"></use></svg></button>
                         <button class="tool-btn edit-tool" id="btn-undo" title="Undo" disabled><svg class="icon"><use href="#icon-undo"></use></svg></button>
                         <button class="tool-btn edit-tool" id="btn-export" title="Export as Image"><svg class="icon"><use href="#icon-export"></use></svg></button>
-                        <button class="tool-btn edit-tool" style="border-color: #ef4444; color: #ef4444;" id="btn-clear-all" title="Clear Day"><svg class="icon"><use href="#icon-delete"></use></svg></button>
+                        <button class="tool-btn edit-tool" style="border-color: rgba(239,68,68,0.3); color: #ef4444;" id="btn-clear-all" title="Clear Day"><svg class="icon"><use href="#icon-delete"></use></svg></button>
                     </div>
                 </div>
             </div>
@@ -415,64 +468,64 @@
             </div>
         </div>
         
-        <div class="app-footer">&copy; 2026 Prax. All Rights Reserved.</div>
+        <div class="app-footer">&copy; 2026 Prax. Deep Work Engine.</div>
     </div>
 
     <div class="modal-overlay" id="distractModal">
-        <div class="modal-content" style="max-width: 420px; text-align: center;">
-            <h2 class="modal-title" style="justify-content: center; color: #ef4444;"><svg class="icon"><use href="#icon-distraction"></use></svg> Distraction Logged</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">What distracted you?</p>
-            <input type="text" id="distractReason" class="task-input" dir="auto" placeholder="e.g., Phone call, YouTube..." style="margin-bottom: 2rem;">
-            <div style="display: flex; gap: 12px; margin-top: 1rem;">
-                <button class="btn" onclick="closeModal('distractModal'); toggleTimer();">Cancel</button>
-                <button class="btn btn-danger" style="background: #ef4444; color: #fff;" onclick="saveDistraction()">Save & Resume</button>
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <h2 class="modal-title" style="justify-content: center; color: #ef4444;"><svg class="icon-lg"><use href="#icon-distraction"></use></svg> Distraction Log</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.15rem; font-weight: 700;">What broke your focus?</p>
+            <input type="text" id="distractReason" class="task-input" dir="auto" placeholder="e.g., Phone call, YouTube..." style="margin-bottom: 2.5rem;">
+            <div style="display: flex; gap: 16px; margin-top: 1rem;">
+                <button class="btn" onclick="triggerHaptic(); closeModal('distractModal'); toggleTimer();">Cancel</button>
+                <button class="btn btn-danger" style="background: #ef4444; color: #fff; border-color:#ef4444;" onclick="triggerHaptic(); saveDistraction()">Save Log</button>
             </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="notesModal">
-        <div class="modal-content settings-modal" style="display: flex; flex-direction: column; height: 80vh; max-width: 800px;">
-            <button class="close-btn" onclick="closeModal('notesModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
-            <h2 class="modal-title"><svg class="icon" style="color: var(--primary);"><use href="#icon-notes"></use></svg> Notes</h2>
-            <textarea id="appNotes" class="notes-textarea" dir="auto" placeholder="Write your thoughts, tasks, or daily plans here..."></textarea>
+        <div class="modal-content settings-modal" style="display: flex; flex-direction: column; height: 85vh; max-width: 850px;">
+            <button class="close-btn" onclick="triggerHaptic(); closeModal('notesModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title"><svg class="icon" style="color: var(--primary);"><use href="#icon-notes"></use></svg> Daily Notes</h2>
+            <textarea id="appNotes" class="notes-textarea" dir="auto" placeholder="Dump your thoughts, active tasks, or scratchpad notes here..."></textarea>
         </div>
     </div>
 
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content settings-modal">
-            <button class="close-btn" onclick="closeModal('settingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
-            <h2 class="modal-title">Timer Settings</h2>
+            <button class="close-btn" onclick="triggerHaptic(); closeModal('settingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Engine Configuration</h2>
             
             <div class="setting-group">
                 <div class="setting-label"><span>Focus Time</span><small>Minutes per session</small></div>
-                <input type="number" id="workMins" class="setting-input" value="25" min="1" onchange="updateTimerSettings()">
+                <input type="number" id="workMins" class="setting-input" value="25" min="1" onchange="triggerHaptic(10); updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Short Break</span><small>Minutes between sessions</small></div>
-                <input type="number" id="shortBreakMins" class="setting-input" value="5" min="1" onchange="updateTimerSettings()">
+                <input type="number" id="shortBreakMins" class="setting-input" value="5" min="1" onchange="triggerHaptic(10); updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Long Break</span><small>Minutes after cycles</small></div>
-                <input type="number" id="longBreakMins" class="setting-input" value="15" min="1" onchange="updateTimerSettings()">
+                <input type="number" id="longBreakMins" class="setting-input" value="15" min="1" onchange="triggerHaptic(10); updateTimerSettings()">
             </div>
             <div class="setting-group">
                 <div class="setting-label"><span>Cycle Limit</span><small>Sessions before long break</small></div>
-                <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="updateTimerSettings()">
+                <input type="number" id="cyclesLimit" class="setting-input" value="4" min="1" onchange="triggerHaptic(10); updateTimerSettings()">
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>Auto-start Breaks</span><small>Start without clicking</small></div>
-                <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="updateTimerSettings()"><span class="slider"></span></label>
+                <div class="setting-label"><span>Auto-start Breaks</span><small>Seamless transitions</small></div>
+                <label class="toggle-switch"><input type="checkbox" id="autoBreak" onchange="triggerHaptic(); updateTimerSettings()"><span class="slider"></span></label>
             </div>
             <div class="setting-group">
-                <div class="setting-label"><span>Auto-start Focus</span><small>Start after break ends</small></div>
-                <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="updateTimerSettings()"><span class="slider"></span></label>
+                <div class="setting-label"><span>Auto-start Focus</span><small>Force deep work return</small></div>
+                <label class="toggle-switch"><input type="checkbox" id="autoFocus" onchange="triggerHaptic(); updateTimerSettings()"><span class="slider"></span></label>
             </div>
             <div class="setting-group" style="padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
-                <div class="setting-label"><span>Alarm Volume</span><small>Notification sound level</small></div>
+                <div class="setting-label"><span>Alarm Volume</span><small>Notification intensity</small></div>
                 <input type="range" id="alarmVolume" class="vol-slider" min="0" max="1" step="0.1" value="0.5" onchange="testSound()">
             </div>
             <div class="setting-group" style="border-bottom: none;">
-                <div class="setting-label"><span>Alarm Sound</span><small>Choose notification tone</small></div>
+                <div class="setting-label"><span>Alarm Tone</span><small>Auditory anchor</small></div>
                 <select id="alarmSoundSelect" class="styled-select" onchange="updateTimerSettings(); testSound();">
                     <option value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">Classic</option>
                     <option value="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3">Digital</option>
@@ -481,8 +534,8 @@
             </div>
             
             <div class="action-btns-grid">
-                <button class="action-btn" onclick="exportData()"><svg class="icon"><use href="#icon-export"></use></svg> Export Data</button>
-                <button class="action-btn" onclick="document.getElementById('importFile').click()"><svg class="icon"><use href="#icon-import"></use></svg> Import Data</button>
+                <button class="action-btn" onclick="triggerHaptic(); exportData()"><svg class="icon"><use href="#icon-export"></use></svg> Export Backup</button>
+                <button class="action-btn" onclick="triggerHaptic(); document.getElementById('importFile').click()"><svg class="icon"><use href="#icon-import"></use></svg> Import Backup</button>
                 <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
             </div>
         </div>
@@ -490,60 +543,60 @@
 
     <div class="modal-overlay" id="timelineSettingsModal">
         <div class="modal-content settings-modal">
-            <button class="close-btn" onclick="closeModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
-            <h2 class="modal-title">Timeline Customization</h2>
+            <button class="close-btn" onclick="triggerHaptic(); closeModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Timeline Visuals</h2>
             
             <div class="setting-group">
-                <div class="setting-label"><span>Global Rest Color</span><small>Timeline color for Rest blocks</small></div>
-                <div class="color-picker-wrapper" style="width: 32px; height: 32px; border-width: 3px;"><input type="color" id="global-rest-color" value="#10b981" onchange="updateRestColor(this.value)"></div>
+                <div class="setting-label"><span>Global Rest Color</span><small>Identify downtime instantly</small></div>
+                <div class="color-picker-wrapper" style="width: 36px; height: 36px; border-width: 3px;"><input type="color" id="global-rest-color" value="#10b981" onchange="updateRestColor(this.value)"></div>
             </div>
             
             <div class="setting-group">
-                <div class="setting-label"><span>Mobile Grid</span><small>Blocks per row on phones</small></div>
-                <select id="mobileGridSelect" class="styled-select" onchange="updateTimelineSettings()">
-                    <option value="6">6 Blocks (30 min)</option>
-                    <option value="4">4 Blocks (20 min)</option>
-                    <option value="3">3 Blocks (15 min)</option>
+                <div class="setting-label"><span>Mobile Density</span><small>Blocks per row on phones</small></div>
+                <select id="mobileGridSelect" class="styled-select" onchange="triggerHaptic(10); updateTimelineSettings()">
+                    <option value="6">Compact (30 min)</option>
+                    <option value="4">Balanced (20 min)</option>
+                    <option value="3">Spaced (15 min)</option>
                 </select>
             </div>
             
             <div class="setting-group" style="padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
-                <div class="setting-label"><span>Time Markers</span><small>Show visual guides</small></div>
+                <div class="setting-label"><span>Time Markers</span><small>Enable visual hour guides</small></div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="timeMarkersToggle" onchange="updateTimelineSettings()">
+                    <input type="checkbox" id="timeMarkersToggle" onchange="triggerHaptic(); updateTimelineSettings()">
                     <span class="slider"></span>
                 </label>
             </div>
             
             <div class="setting-group">
-                <div class="setting-label"><span>Marker Style</span><small>Border vs Blended Text</small></div>
+                <div class="setting-label"><span>Marker Render</span><small>Typography vs Borders</small></div>
                 <select id="markerStyleSelect" class="styled-select" onchange="updateTimelineSettings()">
-                    <option value="text">Watermark Text</option>
-                    <option value="border">Solid Borders</option>
+                    <option value="text">Watermark Numerals</option>
+                    <option value="border">Hard Borders</option>
                 </select>
             </div>
 
             <div class="setting-group">
-                <div class="setting-label"><span>Marker Opacity</span><small>Adjust watermark visibility</small></div>
+                <div class="setting-label"><span>Watermark Opacity</span><small>Fade background text</small></div>
                 <input type="range" id="markerOpacity" class="vol-slider" min="0.01" max="0.30" step="0.01" value="0.05" onchange="updateTimelineSettings()">
             </div>
 
             <div class="setting-group">
-                <div class="setting-label"><span>Block Roundness</span><small>Adjust corner radius</small></div>
-                <input type="range" id="blockRadius" class="vol-slider" min="0" max="15" step="1" value="6" onchange="updateTimelineSettings()">
+                <div class="setting-label"><span>Block Radius</span><small>Corner roundness</small></div>
+                <input type="range" id="blockRadius" class="vol-slider" min="0" max="15" step="1" value="8" onchange="updateTimelineSettings()">
             </div>
 
             <div class="setting-group" style="border-bottom: none;">
-                <div class="setting-label"><span>Block Spacing</span><small>Gap between blocks</small></div>
-                <input type="range" id="blockGap" class="vol-slider" min="0" max="6" step="1" value="2" onchange="updateTimelineSettings()">
+                <div class="setting-label"><span>Grid Spacing</span><small>Gap between blocks</small></div>
+                <input type="range" id="blockGap" class="vol-slider" min="0" max="6" step="1" value="3" onchange="updateTimelineSettings()">
             </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="statsModal">
         <div class="modal-content stats-modal">
-            <button class="close-btn" onclick="closeModal('statsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
-            <h2 class="modal-title">Statistics & History</h2>
+            <button class="close-btn" onclick="triggerHaptic(); closeModal('statsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
+            <h2 class="modal-title">Performance Analytics</h2>
             <div class="stats-content">
                 <div class="history-section">
                     <div class="exec-score-banner">
@@ -554,8 +607,8 @@
                         <div class="exec-circle" id="execScoreCircle">0%</div>
                     </div>
                     <div class="date-select-container">
-                        <select id="dateSelector" class="date-select" onchange="renderDayDetails()"></select>
-                        <button class="add-session-btn" onclick="addManualSession()" title="Add Manual Session"><svg class="icon"><use href="#icon-add"></use></svg></button>
+                        <select id="dateSelector" class="date-select" onchange="triggerHaptic(10); renderDayDetails()"></select>
+                        <button class="add-session-btn" onclick="triggerHaptic(); addManualSession()" title="Add Manual Log"><svg class="icon"><use href="#icon-add"></use></svg></button>
                     </div>
                     <div class="sessions-list" id="sessionsList"></div>
                 </div>
@@ -571,10 +624,12 @@
     <div class="action-panel" id="action-panel">
         <div class="panel-drag-handle"></div>
         <div class="panel-header">
-            <div class="panel-title"><svg class="icon" style="color: var(--primary);"><use href="#icon-edit"></use></svg> Editing Blocks</div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn-panel bp-shift" id="btn-shift" title="Push selected blocks forward" style="min-width: unset; padding: 8px 12px;"><svg class="icon-sm"><use href="#icon-shift"></use></svg> Shift</button>
-                <button id="btn-close-panel" title="Close" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"><svg class="icon" style="width:24px;height:24px;"><use href="#icon-close"></use></svg></button>
+            <div class="panel-title"><svg class="icon" style="color: var(--primary);"><use href="#icon-edit"></use></svg> Editing Time Blocks</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn-panel bp-slice" id="btn-slice" title="Smart split title across blocks" style="min-width: unset; padding: 10px 14px; font-size:1rem;">✂️ Auto-Slice</button>
+                <button class="btn-panel bp-shift" id="btn-shift" title="Push selected blocks forward" style="min-width: unset; padding: 10px 14px;"><svg class="icon-sm"><use href="#icon-shift"></use></svg> Shift Forward</button>
+                
+                <button id="btn-close-panel" title="Close Panel" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 12px; cursor: pointer; padding: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.3s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.color='#ef4444';"><svg class="icon-lg"><use href="#icon-close"></use></svg></button>
             </div>
         </div>
         <div class="panel-content">
@@ -583,44 +638,288 @@
                     <input type="text" id="timeline-task-input" placeholder="Task Name (e.g., Deep Work)" autocomplete="off" dir="auto">
                     <div>
                         <select id="block-type-select" class="styled-select">
-                            <option value="work">Focus</option><option value="neutral">Neutral</option>
+                            <option value="work">Focus / Deep Work</option><option value="neutral">Neutral / Flex</option>
                         </select>
                         <div class="color-divider"></div>
-                        <div style="display: flex; gap: 6px;">
-                            <input type="text" id="custom-tag-emoji" maxlength="2" placeholder="Tag" style="width: 45px; flex: none; min-width: 0; text-align: center; border-radius: 10px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-main); font-size: 0.95rem; font-weight: 700; outline: none; transition: var(--transition);">
-                            <input type="text" id="custom-tag-text" placeholder="Detail" style="width: 90px; flex: none; min-width: 0; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-main); font-size: 0.95rem; font-weight: 600; outline: none; transition: var(--transition);">
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="custom-tag-emoji" maxlength="2" placeholder="Tag" style="width: 50px; flex: none; min-width: 0; text-align: center; border-radius: 12px; border: 2px solid var(--border-color); background: var(--surface-color); color: var(--text-main); font-size: 1rem; font-weight: 800; outline: none; transition: var(--transition);">
+                            <input type="text" id="custom-tag-text" placeholder="Detail Note" style="width: 110px; flex: none; min-width: 0; padding: 0 12px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--surface-color); color: var(--text-main); font-size: 1rem; font-weight: 700; outline: none; transition: var(--transition);">
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="panel-row" style="align-items: flex-start;">
-                <div style="background: var(--bg-color); padding: 16px; border-radius: 16px; border: 1px solid var(--border-color); flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 14px;">
-                    <label style="display: flex; align-items: center; gap: 0.8rem; color: var(--text-main); font-weight: 700; cursor: pointer;">
-                        <input type="checkbox" id="auto-rest" checked style="width:18px; height:18px; accent-color: var(--primary);"> Auto-Append Rest
+                <div style="background: var(--bg-color); padding: 1.5rem; border-radius: 20px; border: 2px solid var(--border-color); flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 16px;">
+                    <label style="display: flex; align-items: center; gap: 1rem; color: var(--text-main); font-weight: 800; cursor: pointer; font-size:1.1rem;">
+                        <input type="checkbox" id="auto-rest" checked style="width:20px; height:20px; accent-color: var(--primary);"> Auto-Append Rest
                     </label>
                     <select id="rest-duration" class="styled-select" style="width: 100%;">
-                        <option value="1">5 min</option><option value="2">10 min</option><option value="3" selected>15 min</option><option value="4">20 min</option>
+                        <option value="1">5 min Recovery</option><option value="2">10 min Recovery</option><option value="3" selected>15 min Recovery</option><option value="4">20 min Recovery</option>
                     </select>
                 </div>
-                <div class="micro-tasks-container" style="flex: 2; min-width: 280px;">
-                    <h4><svg class="icon-sm"><use href="#icon-check"></use></svg> Micro-Steps (Optional)</h4>
+                <div class="micro-tasks-container" style="flex: 2; min-width: 300px;">
+                    <h4><svg class="icon-sm"><use href="#icon-check"></use></svg> Actionable Micro-Steps</h4>
                     <div class="task-list" id="subtaskList"></div>
                     <div class="subtask-input-wrapper">
-                        <input type="text" id="subtask-input" placeholder="e.g., Setup Database..." onkeypress="if(event.key==='Enter') addSubtask()">
-                        <button onclick="addSubtask()">+</button>
+                        <input type="text" id="subtask-input" placeholder="e.g., Define Schema..." onkeypress="if(event.key==='Enter') { triggerHaptic(10); addSubtask(); }">
+                        <button onclick="triggerHaptic(20); addSubtask()">+</button>
                     </div>
                 </div>
             </div>
 
             <div class="btn-group">
                 <button class="btn-panel bp-clear" id="btn-clear">Clear Chain</button>
-                <button class="btn-panel bp-save" id="btn-save">Save changes</button>
+                <button class="btn-panel bp-save" id="btn-save">Save Chain</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ================= FIREBASE INIT & SECURE AUTH =================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDzD93ws98_SudMWlyBr194hkFp1u7LPeI",
+            authDomain: "prex-010101.firebaseapp.com",
+            projectId: "prex-010101",
+            storageBucket: "prex-010101.firebasestorage.app",
+            messagingSenderId: "423918461023",
+            appId: "1:423918461023:web:07b5976d0a32b82fe57bea"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        const authOverlay = document.getElementById('authOverlay');
+        const loginBtn = document.getElementById('loginBtn');
+        const authStatus = document.getElementById('authStatus');
+        const emailInput = document.getElementById('authEmail');
+
+        if(localStorage.getItem('prax_saved_email')) {
+            emailInput.value = localStorage.getItem('prax_saved_email');
+        }
+
+        auth.onAuthStateChanged((user) => {
+            if (user && user.email === "ibnislam2023@gmail.com") {
+                localStorage.setItem('prax_saved_email', user.email);
+                
+                authOverlay.style.opacity = '0';
+                setTimeout(() => authOverlay.style.display = 'none', 600);
+                pullFromCloud(); 
+                listenToLiveTimer(); 
+            } else {
+                authOverlay.style.display = 'flex';
+                void authOverlay.offsetWidth;
+                authOverlay.style.opacity = '1';
+            }
+        });
+
+        loginBtn.addEventListener('click', () => {
+            const email = emailInput.value.trim();
+            const password = document.getElementById('authPassword').value;
+            
+            if(!email || !password) {
+                authStatus.innerText = "Credentials required.";
+                return;
+            }
+
+            loginBtn.innerText = "Verifying..."; loginBtn.disabled = true;
+            triggerHaptic(50);
+
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => auth.signInWithEmailAndPassword(email, password))
+                .catch((error) => {
+                    authStatus.innerText = "Access Denied.";
+                    loginBtn.innerHTML = `Authenticate <svg class="icon" style="margin-left:8px;"><use href="#icon-check"></use></svg>`;
+                    loginBtn.disabled = false;
+                    document.getElementById('authPassword').value = ''; 
+                    triggerHaptic([50, 100, 50]); 
+                });
+        });
+
+        // ================= SMART SYNC ENGINE =================
+        let syncTimeout = null, isSyncing = false;
+        const SYNC_DEBOUNCE_MS = 5000;
+        const syncStatusUI = document.getElementById('syncStatus'), syncTextUI = document.getElementById('syncText');
+
+        function smartMerge(localJson, cloudJson) {
+            let local = JSON.parse(localJson || '{}');
+            let cloud = JSON.parse(cloudJson || '{}');
+            let merged = { ...cloud, ...local }; 
+
+            if(local.pomoDataAdvanced && cloud.pomoDataAdvanced) {
+                let lPomo = JSON.parse(local.pomoDataAdvanced); let cPomo = JSON.parse(cloud.pomoDataAdvanced);
+                for(let date in cPomo) {
+                    if(!lPomo[date]) lPomo[date] = cPomo[date];
+                    else {
+                        let allSessions = [...lPomo[date].sessions, ...cPomo[date].sessions];
+                        lPomo[date].sessions = Array.from(new Set(allSessions.map(JSON.stringify))).map(JSON.parse);
+                        lPomo[date].sessions.sort((a,b) => b.time.localeCompare(a.time));
+
+                        let allDist = [...(lPomo[date].distractions||[]), ...(cPomo[date].distractions||[])];
+                        lPomo[date].distractions = Array.from(new Set(allDist.map(JSON.stringify))).map(JSON.parse);
+                        lPomo[date].distractions.sort((a,b) => b.time.localeCompare(a.time));
+
+                        lPomo[date].totalMins = Math.max(lPomo[date].totalMins, cPomo[date].totalMins);
+                    }
+                }
+                merged.pomoDataAdvanced = JSON.stringify(lPomo);
+            }
+
+            Object.keys(cloud).forEach(key => {
+                if(key.startsWith('praxTimeline_') && local[key]) {
+                    let lTime = JSON.parse(local[key]); let cTime = JSON.parse(cloud[key]);
+                    for(let i=0; i<288; i++) {
+                        if(lTime[i].type === 'blank' && cTime[i].type !== 'blank') lTime[i] = cTime[i];
+                        else if(lTime[i].type !== 'blank' && cTime[i].type !== 'blank' && cTime[i].actual && !lTime[i].actual) lTime[i] = cTime[i];
+                    }
+                    merged[key] = JSON.stringify(lTime);
+                }
+            });
+
+            return JSON.stringify(merged);
+        }
+
+        function pullFromCloud() {
+            if(!auth.currentUser) return;
+            syncStatusUI.style.opacity = '1'; syncTextUI.innerText = 'Pulling...';
+            db.collection('users').doc(auth.currentUser.uid).get().then(doc => {
+                if(doc.exists && doc.data().localStorageBackup) {
+                    const localData = {};
+                    for(let i=0; i<localStorage.length; i++) { 
+                        if(localStorage.key(i) !== 'prax_saved_email') {
+                            localData[localStorage.key(i)] = localStorage.getItem(localStorage.key(i)); 
+                        }
+                    }
+                    
+                    const mergedData = JSON.parse(smartMerge(JSON.stringify(localData), doc.data().localStorageBackup));
+                    
+                    for(let key in mergedData) { localStorage.setItem(key, mergedData[key]); }
+                    
+                    loadSavedConfig();
+                    document.getElementById('appNotes').value = localStorage.getItem('pomoNotes') || '';
+                    initTimelineData();
+                    if(myChart) loadFullStats();
+                    currentThemeIndex = themes.indexOf(localStorage.getItem('pomoMode') || 'dark');
+                    if(currentThemeIndex === -1) currentThemeIndex = 1;
+                    document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]);
+                    applyPrimaryColor(localStorage.getItem('pomoPrimaryColor') || '#ff4757', false);
+                    updateRestColor(localStorage.getItem('pomoRestColor') || '#10b981', false);
+                }
+                syncStatusUI.classList.add('synced'); syncTextUI.innerText = 'Synced';
+                setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
+            }).catch(err => console.error("Pull error:", err));
+        }
+
+        function triggerSync() {
+            if(!auth.currentUser) return;
+            syncStatusUI.style.opacity = '1'; syncStatusUI.classList.add('syncing'); syncTextUI.innerText = 'Syncing...';
+            clearTimeout(syncTimeout); isSyncing = true;
+            syncTimeout = setTimeout(() => { executeSync(); }, SYNC_DEBOUNCE_MS);
+        }
+
+        function executeSync() {
+            if(!auth.currentUser) return;
+            db.collection('users').doc(auth.currentUser.uid).get().then(doc => {
+                const cloudJson = (doc.exists && doc.data().localStorageBackup) ? doc.data().localStorageBackup : '{}';
+                
+                const localData = {};
+                for(let i=0; i<localStorage.length; i++) { 
+                    if(localStorage.key(i) !== 'prax_saved_email') {
+                        localData[localStorage.key(i)] = localStorage.getItem(localStorage.key(i)); 
+                    }
+                }
+                
+                const mergedJsonToPush = smartMerge(JSON.stringify(localData), cloudJson);
+
+                db.collection('users').doc(auth.currentUser.uid).set({
+                    localStorageBackup: mergedJsonToPush,
+                    lastSync: firebase.firestore.FieldValue.serverTimestamp()
+                }, {merge: true}).then(() => {
+                    isSyncing = false;
+                    syncStatusUI.classList.remove('syncing'); syncStatusUI.classList.add('synced'); syncTextUI.innerText = 'Synced';
+                    setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
+                });
+            });
+        }
+
+        window.addEventListener('beforeunload', (e) => { if(isSyncing) { executeSync(); } });
+        // ================= REAL-TIME TIMER SYNC =================
+        let lastLiveUpdate = 0;
+        
+        function syncLiveTimerState() {
+            if(!auth.currentUser) return;
+            const now = Date.now();
+            lastLiveUpdate = now;
+            
+            const timerState = {
+                isRunning,
+                isFlowMode,
+                currentMode,
+                timeLeft,
+                flowSeconds,
+                sessionStartTime,
+                targetEndTime: isRunning && !isFlowMode ? now + (timeLeft * 1000) : null,
+                timestamp: now
+            };
+            
+            db.collection('users').doc(auth.currentUser.uid).set({
+                liveTimer: timerState
+            }, {merge: true});
+        }
+
+        function listenToLiveTimer() {
+            if(!auth.currentUser) return;
+            db.collection('users').doc(auth.currentUser.uid).onSnapshot(doc => {
+                if(doc.exists && doc.data().liveTimer) {
+                    const live = doc.data().liveTimer;
+                    if(Date.now() - lastLiveUpdate < 2000 || live.timestamp <= lastLiveUpdate) return;
+                    
+                    document.getElementById('realtimeIndicator').style.display = live.isRunning ? 'flex' : 'none';
+                    
+                    isFlowMode = live.isFlowMode;
+                    currentMode = live.currentMode;
+                    sessionStartTime = live.sessionStartTime;
+                    
+                    if (live.isRunning && !live.isFlowMode && live.targetEndTime) {
+                        const remaining = Math.max(0, Math.floor((live.targetEndTime - Date.now()) / 1000));
+                        timeLeft = remaining;
+                        if(!isRunning) {
+                            isRunning = true;
+                            timerWrapper.classList.add('running');
+                            startBtn.innerHTML = `<svg class="icon"><use href="#icon-pause"></use></svg> Pause`;
+                            distractBtn.style.display = 'flex';
+                            clearInterval(timerId);
+                            timerId = setInterval(tick, 1000);
+                        }
+                    } else if (live.isRunning && live.isFlowMode) {
+                        flowSeconds = live.flowSeconds + Math.floor((Date.now() - live.timestamp)/1000);
+                        if(!isRunning) {
+                            isRunning = true;
+                            timerWrapper.classList.add('flow');
+                            flowBtn.innerHTML = `<svg class="icon"><use href="#icon-stop"></use></svg> Stop`;
+                            flowBtn.classList.add('btn-primary');
+                            clearInterval(timerId);
+                            timerId = setInterval(tick, 1000);
+                        }
+                    } else {
+                        if(isRunning) {
+                            clearInterval(timerId);
+                            isRunning = false;
+                            timerWrapper.classList.remove('running', 'flow');
+                            startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`;
+                            flowBtn.innerHTML = `<svg class="icon"><use href="#icon-flow"></use></svg> Flow`;
+                            flowBtn.classList.remove('btn-primary');
+                            distractBtn.style.display = 'none';
+                        }
+                        timeLeft = live.timeLeft;
+                        flowSeconds = live.flowSeconds;
+                    }
+                    updateDisplay();
+                }
+            });
+        }
+
         // Shared State & Init
         let currentPrimaryColor = localStorage.getItem('pomoPrimaryColor') || '#ff4757';
         let currentRestColor = localStorage.getItem('pomoRestColor') || '#10b981';
@@ -638,14 +937,10 @@
         let blocksData = [], isDragging = false, currentSelection = new Set(), historyStack = [];
         let backupBlocksSnapshot = null, originalClickType = 'add', currentChainId = null; 
 
-        // Multi-day architecture variables
         let currentViewDate = getToday();
         let isReadOnly = false;
 
-        // Performance: DOM Caching
         let timeBlockElements = [];
-
-        // Touch Variables for Mobile Fix
         let touchTimer = null, startTouchY = 0, startTouchX = 0, isTouchDrawing = false;
 
         const timeDisplay = document.getElementById('timeDisplay'), startBtn = document.getElementById('startBtn'), flowBtn = document.getElementById('flowBtn'), phaseText = document.getElementById('phaseText'), taskInput = document.getElementById('taskInput'), timerWrapper = document.getElementById('timerWrapper');
@@ -653,17 +948,17 @@
         let alarmSound = new Audio(config.alarmUrl);
         let myChart = null;
         const particlesContainer = document.getElementById('particles');
-        let particleInterval = null, activeParticlesCount = 0; const MAX_PARTICLES = 35;
+        let particleInterval = null, activeParticlesCount = 0; const MAX_PARTICLES = 40;
         const timeline = document.getElementById('timeline'), actionPanel = document.getElementById('action-panel'), fabCustomize = document.getElementById('fab-customize'), timelineTaskInput = document.getElementById('timeline-task-input'), blockTypeSelect = document.getElementById('block-type-select');
         const tagEmoji = document.getElementById('custom-tag-emoji'), tagText = document.getElementById('custom-tag-text');
 
-        function triggerHaptic(duration = 30) { if(navigator.vibrate) navigator.vibrate(duration); }
+        function triggerHaptic(duration = 30) { if(navigator.vibrate) { try { navigator.vibrate(duration); } catch(e) {} } }
         function generateId() { return Math.random().toString(36).substr(2, 9); }
         function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]);
-            applyPrimaryColor(currentPrimaryColor); updateRestColor(currentRestColor, false);
+            applyPrimaryColor(currentPrimaryColor, false); updateRestColor(currentRestColor, false);
             document.getElementById('global-rest-color').value = currentRestColor;
             
             loadSavedConfig(); updateDisplay(); initChart(); 
@@ -674,7 +969,10 @@
             loadTimelineSettings();
 
             document.getElementById('appNotes').value = localStorage.getItem('pomoNotes') || '';
-            document.getElementById('appNotes').addEventListener('input', (e) => localStorage.setItem('pomoNotes', e.target.value));
+            document.getElementById('appNotes').addEventListener('input', (e) => { 
+                localStorage.setItem('pomoNotes', e.target.value);
+                triggerSync(); 
+            });
 
             fabCustomize.addEventListener('click', () => { triggerHaptic(50); openEditPanel(); });
 
@@ -685,12 +983,17 @@
             document.getElementById('btn-close-panel').addEventListener('click', () => { triggerHaptic(); cancelEdit(); });
             document.getElementById('btn-clear').addEventListener('click', () => { triggerHaptic(50); clearSelectedBlocks(); });
             document.getElementById('btn-shift').addEventListener('click', () => { triggerHaptic(80); shiftBlocksForward(); });
+            
+            document.getElementById('btn-slice').addEventListener('click', () => { triggerHaptic(30); smartSliceTitle(); });
+
             document.getElementById('btn-clear-all').addEventListener('click', () => {
                 if(isReadOnly) return;
+                triggerHaptic([50, 100, 50]);
                 if(confirm('Clear entire day?')) { saveHistory(); blocksData.forEach(b => { b.type='blank'; b.title=''; b.actual=false; delete b.customTag; delete b.subtasks; delete b.chainId; }); renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal();}
             });
             document.getElementById('btn-undo').addEventListener('click', () => {
                 if(isReadOnly) return;
+                triggerHaptic();
                 if(historyStack.length > 0) { blocksData = JSON.parse(historyStack.pop()); document.getElementById('btn-undo').disabled = historyStack.length === 0; renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); }
             });
 
@@ -727,14 +1030,12 @@
         // --- Timeline Multi-Day Architecture ---
         function initTimelineData() {
             const today = getToday();
-            
-            // Smart Migration: move legacy single-day data to today if it exists
             const legacyData = localStorage.getItem('timelineBlocksData');
             if(legacyData && !localStorage.getItem(`praxTimeline_${today}`)) {
                 localStorage.setItem(`praxTimeline_${today}`, legacyData);
-                localStorage.removeItem('timelineBlocksData'); // clean old structure
+                localStorage.removeItem('timelineBlocksData'); 
+                triggerSync();
             }
-
             loadTimelineForDate(today);
         }
 
@@ -748,10 +1049,9 @@
             const titleText = document.getElementById('timeline-title-text');
             const timelineWrapper = document.querySelector('.timeline-wrapper');
             
-            // UX Updates based on mode
             if(isReadOnly) {
                 btnGoToday.style.display = 'flex';
-                titleText.innerHTML = `History <span style="font-size:0.6em; color:#ef4444; margin-left:8px; padding: 2px 6px; border:1px solid #ef4444; border-radius:8px;">Read-Only</span>`;
+                titleText.innerHTML = `History <span style="font-size:0.65em; color:#ef4444; margin-left:10px; padding: 4px 8px; border:2px solid #ef4444; border-radius:12px; font-weight:800; text-transform:uppercase;">Read-Only</span>`;
                 timelineWrapper.style.opacity = '0.7';
                 document.getElementById('playhead').style.display = 'none';
                 document.querySelectorAll('.edit-tool').forEach(btn => btn.disabled = true);
@@ -768,14 +1068,11 @@
             if (saved && saved.length === (TOTAL_HOURS * BLOCKS_PER_HOUR)) {
                 blocksData = saved;
             } else {
-                // Generate empty day
                 blocksData = [];
                 for (let h = 0; h < TOTAL_HOURS; h++) {
-                    for (let b = 0; b < BLOCKS_PER_HOUR; b++) {
-                        blocksData.push({ type: 'blank', title: '', actual: false });
-                    }
+                    for (let b = 0; b < BLOCKS_PER_HOUR; b++) { blocksData.push({ type: 'blank', title: '', actual: false }); }
                 }
-                if(!isReadOnly) saveTimelineToLocal(); // Save empty init only if today
+                if(!isReadOnly) saveTimelineToLocal(); 
             }
 
             historyStack = [];
@@ -783,14 +1080,12 @@
             renderTimelineBlocks();
             updateTimelineStats();
             if(!isReadOnly) {
-                // trigger a playhead update immediately if switching to today
                 const d = new Date(); 
                 const percentage = ((d.getHours() * 60 + d.getMinutes()) / (24 * 60)) * 100;
                 document.getElementById('playhead').style.top = `${percentage}%`;
             }
         }
 
-        // --- Timeline Settings ---
         function updateTimelineSettings() {
             const gridValue = document.getElementById('mobileGridSelect').value;
             const showMarkers = document.getElementById('timeMarkersToggle').checked;
@@ -805,10 +1100,9 @@
             localStorage.setItem('pomoMarkerOpacity', mOpacity);
             localStorage.setItem('pomoBlockRadius', bRadius);
             localStorage.setItem('pomoBlockGap', bGap);
+            triggerSync();
             
-            document.querySelectorAll('.blocks-grid').forEach(grid => {
-                grid.setAttribute('data-grid', gridValue);
-            });
+            document.querySelectorAll('.blocks-grid').forEach(grid => { grid.setAttribute('data-grid', gridValue); });
             
             const timelineWrapper = document.querySelector('.timeline-wrapper');
             if(showMarkers) {
@@ -825,11 +1119,11 @@
 
         function loadTimelineSettings() {
             const savedGrid = localStorage.getItem('pomoMobileGrid') || '6';
-            const savedMarkers = localStorage.getItem('pomoTimeMarkers') === 'true'; // Default true
+            const savedMarkers = localStorage.getItem('pomoTimeMarkers') === 'true'; 
             const savedMarkerStyle = localStorage.getItem('pomoMarkerStyle') || 'text';
             const savedOpacity = localStorage.getItem('pomoMarkerOpacity') || '0.05';
-            const savedRadius = localStorage.getItem('pomoBlockRadius') || '6';
-            const savedGap = localStorage.getItem('pomoBlockGap') || '2';
+            const savedRadius = localStorage.getItem('pomoBlockRadius') || '8';
+            const savedGap = localStorage.getItem('pomoBlockGap') || '3';
             
             document.getElementById('mobileGridSelect').value = savedGrid;
             document.getElementById('timeMarkersToggle').checked = savedMarkers;
@@ -842,42 +1136,45 @@
         }
 
         function scrollToNow() {
-            triggerHaptic(30);
-            if(isReadOnly) { loadTimelineForDate(getToday()); } // if in past, jump to today's screen first
+            triggerHaptic(40);
+            if(isReadOnly) { loadTimelineForDate(getToday()); } 
             
             setTimeout(() => {
                 const nowBlock = document.querySelector('.time-block.is-now');
                 if(nowBlock) {
                     nowBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     const origBg = nowBlock.style.backgroundColor;
-                    nowBlock.style.transition = 'background-color 0.5s';
+                    nowBlock.style.transition = 'background-color 0.5s, transform 0.3s';
                     nowBlock.style.backgroundColor = 'var(--primary)';
+                    nowBlock.style.transform = 'scale(1.1)';
                     setTimeout(() => {
                         nowBlock.style.backgroundColor = origBg;
+                        nowBlock.style.transform = '';
                         setTimeout(() => nowBlock.style.transition = '', 500);
                     }, 500);
                 }
-            }, 50); // slight delay to ensure DOM is rendered if we jumped days
+            }, 50); 
         }
 
-        function cycleTheme() { currentThemeIndex = (currentThemeIndex + 1) % 3; document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]); localStorage.setItem('pomoMode', themes[currentThemeIndex]); if(myChart) loadFullStats(); }
-        function applyPrimaryColor(color) {
+        function cycleTheme() { currentThemeIndex = (currentThemeIndex + 1) % 3; document.documentElement.setAttribute('data-theme', themes[currentThemeIndex]); localStorage.setItem('pomoMode', themes[currentThemeIndex]); triggerSync(); if(myChart) loadFullStats(); }
+        function applyPrimaryColor(color, save = true) {
             currentPrimaryColor = color; document.documentElement.style.setProperty('--primary', color);
             let hex = color.replace('#', ''), r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
-            document.documentElement.style.setProperty('--primary-glow', `rgba(${r}, ${g}, ${b}, 0.3)`); document.documentElement.style.setProperty('--primary-transparent', `rgba(${r}, ${g}, ${b}, 0.15)`); localStorage.setItem('pomoPrimaryColor', color);
+            document.documentElement.style.setProperty('--primary-glow', `rgba(${r}, ${g}, ${b}, 0.3)`); document.documentElement.style.setProperty('--primary-transparent', `rgba(${r}, ${g}, ${b}, 0.15)`); 
+            if(save) { localStorage.setItem('pomoPrimaryColor', color); triggerSync(); }
             if (!mainColors.includes(color)) { mainColors.unshift(color); if (mainColors.length > 5) mainColors.pop(); localStorage.setItem('mainColors', JSON.stringify(mainColors)); }
-            document.getElementById('main-palette').innerHTML = `<div class="color-picker-wrapper"><input type="color" value="${currentPrimaryColor}" onchange="applyPrimaryColor(this.value)"></div>` + mainColors.map(c => `<div class="swatch ${c === currentPrimaryColor ? 'active' : ''}" style="background-color: ${c}" onclick="applyPrimaryColor('${c}')"></div>`).join('');
+            document.getElementById('main-palette').innerHTML = `<div class="color-picker-wrapper"><input type="color" value="${currentPrimaryColor}" onchange="applyPrimaryColor(this.value)"></div>` + mainColors.map(c => `<div class="swatch ${c === currentPrimaryColor ? 'active' : ''}" style="background-color: ${c}" onclick="triggerHaptic(20); applyPrimaryColor('${c}')"></div>`).join('');
             if(myChart) loadFullStats();
         }
         function updateRestColor(color, save = true) {
             currentRestColor = color; document.documentElement.style.setProperty('--rest-color', color);
             let hex = color.replace('#', ''), r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
-            document.documentElement.style.setProperty('--rest-transparent', `rgba(${r}, ${g}, ${b}, 0.15)`); if(save) localStorage.setItem('pomoRestColor', color);
+            document.documentElement.style.setProperty('--rest-transparent', `rgba(${r}, ${g}, ${b}, 0.15)`); 
+            if(save) { localStorage.setItem('pomoRestColor', color); triggerSync(); }
         }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        // --- Timer Engine ---
         function loadSavedConfig() {
             const saved = JSON.parse(localStorage.getItem('pomoConfig')); if(saved) config = {...config, ...saved};
             ['work', 'shortBreak', 'longBreak'].forEach(k => document.getElementById(`${k}Mins`).value = config[k] / 60);
@@ -899,6 +1196,7 @@
             alarmSound.src = config.alarmUrl;
             
             localStorage.setItem('pomoConfig', JSON.stringify(config)); 
+            triggerSync();
             if(!isRunning && !isFlowMode) resetTimer();
         }
         function testSound() { 
@@ -907,6 +1205,7 @@
             alarmSound.currentTime = 0; 
             alarmSound.play().catch(e => console.log('Audio test error:', e)); 
             localStorage.setItem('pomoConfig', JSON.stringify(config)); 
+            triggerSync();
         }
         function triggerNotification(title, body) { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: body }); }
         function getNowIndex() { const d = new Date(); return (d.getHours() * 12) + Math.floor(d.getMinutes() / 5); }
@@ -914,17 +1213,12 @@
         function syncTimerToTimeline() {
             if (!isRunning) return;
             const today = getToday();
-            
-            // Ghost Sync Logic: If viewing past, update today's data in the background
             let targetData = blocksData;
             let needsBackgroundSave = false;
 
             if (currentViewDate !== today) {
                 const savedToday = JSON.parse(localStorage.getItem(`praxTimeline_${today}`));
-                if (savedToday) {
-                    targetData = savedToday;
-                    needsBackgroundSave = true;
-                } else return; // Nothing to sync to if today was never generated
+                if (savedToday) { targetData = savedToday; needsBackgroundSave = true; } else return; 
             }
 
             const idx = getNowIndex(); 
@@ -935,6 +1229,7 @@
                     block.actual = true; 
                     if (needsBackgroundSave) {
                         localStorage.setItem(`praxTimeline_${today}`, JSON.stringify(targetData));
+                        triggerSync();
                     } else {
                         saveTimelineToLocal(); 
                         renderTimelineBlocks(); 
@@ -954,6 +1249,8 @@
                 if(currentMode === 'work' && !sessionStartTime) sessionStartTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}); 
                 isRunning = true; startBtn.innerHTML = `<svg class="icon"><use href="#icon-pause"></use></svg> Pause`; timerWrapper.classList.add('running'); timerId = setInterval(tick, 1000); syncTimerToTimeline(); distractBtn.style.display = 'flex';
             }
+            syncLiveTimerState(); 
+            document.getElementById('realtimeIndicator').style.display = isRunning ? 'flex' : 'none';
         }
 
         function toggleFlowMode() {
@@ -966,14 +1263,18 @@
             } else {
                 isFlowMode = true; isRunning = true; flowSeconds = 0; sessionStartTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}); flowBtn.innerHTML = `<svg class="icon"><use href="#icon-stop"></use></svg> Stop`; flowBtn.classList.add('btn-primary'); startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`; timerWrapper.classList.add('flow'); phaseText.innerText = "Flow Mode (Deep Focus)"; timerId = setInterval(tick, 1000); startParticles(); syncTimerToTimeline(); distractBtn.style.display = 'none';
             }
+            syncLiveTimerState(); 
+            document.getElementById('realtimeIndicator').style.display = isRunning ? 'flex' : 'none';
         }
 
-        function logDistraction() { triggerHaptic(); toggleTimer(); distractionStart = new Date(); document.getElementById('distractReason').value = ''; openModal('distractModal'); }
+        function logDistraction() { triggerHaptic(40); toggleTimer(); distractionStart = new Date(); document.getElementById('distractReason').value = ''; openModal('distractModal'); }
         function saveDistraction() {
             const reason = document.getElementById('distractReason').value || 'Unknown Interruption'; const dur = Math.round((new Date() - distractionStart) / 60000);
             let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday(); if(!data[today]) data[today] = { totalMins: 0, sessions: [], distractions: [] };
             if(!data[today].distractions) data[today].distractions = []; data[today].distractions.unshift({ time: new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}), reason: reason, dur: dur });
-            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); closeModal('distractModal'); toggleTimer(); loadFullStats();
+            localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); 
+            triggerSync();
+            closeModal('distractModal'); toggleTimer(); loadFullStats();
         }
 
         function tick() { 
@@ -989,27 +1290,26 @@
                 else { currentMode = 'shortBreak'; timeLeft = config.shortBreak; phaseText.innerText = `Short Break (${completedCycles}/${config.cyclesLimit})`; triggerNotification("Break Time!", `Take a quick rest.`); }
                 startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start Break`; if(config.autoBreak) toggleTimer();
             } else { currentMode = 'work'; timeLeft = config.work; phaseText.innerText = "Focus"; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start Focus`; triggerNotification("Break over", `Time to focus.`); if(config.autoFocus) toggleTimer(); } updateDisplay();
+            syncLiveTimerState(); 
+            document.getElementById('realtimeIndicator').style.display = isRunning ? 'flex' : 'none';
         }
 
-        function resetTimer() { triggerHaptic(30); clearInterval(timerId); isRunning = false; isFlowMode = false; stopParticles(); timerWrapper.classList.remove('running', 'flow'); distractBtn.style.display = 'none'; flowBtn.innerHTML = `<svg class="icon"><use href="#icon-flow"></use></svg> Flow`; flowBtn.classList.remove('btn-primary'); currentMode = 'work'; timeLeft = config.work; flowSeconds = 0; sessionStartTime = null; phaseText.innerText = "Focus"; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`; updateDisplay(); }
+        function resetTimer() { clearInterval(timerId); isRunning = false; isFlowMode = false; stopParticles(); timerWrapper.classList.remove('running', 'flow'); distractBtn.style.display = 'none'; flowBtn.innerHTML = `<svg class="icon"><use href="#icon-flow"></use></svg> Flow`; flowBtn.classList.remove('btn-primary'); currentMode = 'work'; timeLeft = config.work; flowSeconds = 0; sessionStartTime = null; phaseText.innerText = "Focus"; startBtn.innerHTML = `<svg class="icon"><use href="#icon-play"></use></svg> Start`; updateDisplay(); syncLiveTimerState(); document.getElementById('realtimeIndicator').style.display = 'none';}
         function updateDisplay() { let total = isFlowMode ? flowSeconds : timeLeft; const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60).toString().padStart(2, '0'), s = (total % 60).toString().padStart(2, '0'); timeDisplay.innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`; document.title = `${timeDisplay.innerText} - ${isFlowMode ? 'Flow' : 'Focus'}`; }
         
-        function startParticles() { clearInterval(particleInterval); particleInterval = setInterval(() => { if (document.hidden || activeParticlesCount >= MAX_PARTICLES) return; const p = document.createElement('div'); p.classList.add('particle'); p.style.left = Math.random() * 100 + 'vw'; activeParticlesCount++; const duration = Math.random() * 3 + 4; p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = p.style.width; p.style.background = currentPrimaryColor; p.style.borderRadius = '50%'; p.style.animation = `driftUp ${duration - 1}s ease-in forwards`; particlesContainer.appendChild(p); setTimeout(() => { p.remove(); activeParticlesCount--; }, duration * 1000); }, 300); }
+        function startParticles() { clearInterval(particleInterval); particleInterval = setInterval(() => { if (document.hidden || activeParticlesCount >= MAX_PARTICLES) return; const p = document.createElement('div'); p.classList.add('particle'); p.style.left = Math.random() * 100 + 'vw'; activeParticlesCount++; const duration = Math.random() * 3 + 4; p.style.width = Math.random() * 10 + 8 + 'px'; p.style.height = p.style.width; p.style.background = currentPrimaryColor; p.style.borderRadius = '50%'; p.style.animation = `driftUp ${duration - 1}s ease-in forwards`; particlesContainer.appendChild(p); setTimeout(() => { p.remove(); activeParticlesCount--; }, duration * 1000); }, 250); }
         function stopParticles() { clearInterval(particleInterval); particlesContainer.innerHTML = ''; activeParticlesCount = 0; }
 
-        // --- Stats & History Engine ---
-        function saveSession(task, dur, startT) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday(); if(!data[today]) data[today] = { totalMins: 0, sessions: [], distractions: [] }; data[today].totalMins += dur; data[today].sessions.unshift({ name: task, duration: dur, time: startT || new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) }); localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); updateTimelineStats(); }
+        function saveSession(task, dur, startT) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const today = getToday(); if(!data[today]) data[today] = { totalMins: 0, sessions: [], distractions: [] }; data[today].totalMins += dur; data[today].sessions.unshift({ name: task, duration: dur, time: startT || new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) }); localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); updateTimelineStats(); triggerSync(); }
         function addManualSession() { let taskName = prompt("Task Name:", "Manual Session"); if (!taskName) return; let duration = parseInt(prompt("Duration (mins):", "25")); if (isNaN(duration) || duration <= 0) return alert("Invalid duration!"); saveSession(taskName, duration, new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})); }
-        function editSession(dateStr, idx) { let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); let s = data[dateStr].sessions[idx]; let newName = prompt("Edit Task Name:", s.name); if (newName === null) return; let newDur = parseInt(prompt("Edit Duration (mins):", s.duration)); if (isNaN(newDur) || newDur < 0) return alert("Invalid duration!"); data[dateStr].totalMins += (newDur - s.duration); s.name = newName; s.duration = newDur; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
-        function deleteSession(dateStr, idx) { if(!confirm("Delete this session?")) return; let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); data[dateStr].totalMins -= data[dateStr].sessions[idx].duration; data[dateStr].sessions.splice(idx, 1); if(data[dateStr].sessions.length === 0 && (!data[dateStr].distractions || data[dateStr].distractions.length===0)) delete data[dateStr]; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); }
+        function editSession(dateStr, idx) { triggerHaptic(20); let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); let s = data[dateStr].sessions[idx]; let newName = prompt("Edit Task Name:", s.name); if (newName === null) return; let newDur = parseInt(prompt("Edit Duration (mins):", s.duration)); if (isNaN(newDur) || newDur < 0) return alert("Invalid duration!"); data[dateStr].totalMins += (newDur - s.duration); s.name = newName; s.duration = newDur; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); triggerSync(); }
+        function deleteSession(dateStr, idx) { triggerHaptic([30, 50, 30]); if(!confirm("Delete this session?")) return; let data = JSON.parse(localStorage.getItem('pomoDataAdvanced')); data[dateStr].totalMins -= data[dateStr].sessions[idx].duration; data[dateStr].sessions.splice(idx, 1); if(data[dateStr].sessions.length === 0 && (!data[dateStr].distractions || data[dateStr].distractions.length===0)) delete data[dateStr]; localStorage.setItem('pomoDataAdvanced', JSON.stringify(data)); loadFullStats(); triggerSync(); }
         
         function exportData() { 
             let allTimelines = {};
             for(let i=0; i<localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if(key.startsWith('praxTimeline_')) {
-                    allTimelines[key] = localStorage.getItem(key);
-                }
+                if(key.startsWith('praxTimeline_')) { allTimelines[key] = localStorage.getItem(key); }
             }
             const data = { pomo: localStorage.getItem('pomoDataAdvanced'), timelines: allTimelines, notes: localStorage.getItem('pomoNotes') }; 
             const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'prax_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); 
@@ -1026,45 +1326,40 @@
                     } 
                     if(imported.notes) { localStorage.setItem('pomoNotes', imported.notes); document.getElementById('appNotes').value = imported.notes; } 
                     alert('Data imported successfully!'); if(document.getElementById('statsModal').classList.contains('active')) loadFullStats(); 
+                    executeSync(); 
                 } catch(err) { alert('Invalid file format!'); } 
             }; reader.readAsText(file); e.target.value = ''; 
         }
         
         function loadFullStats() {
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}; const sel = document.getElementById('dateSelector'); sel.innerHTML = ''; const dates = Object.keys(data).sort((a,b) => new Date(b) - new Date(a)); 
-            if(dates.length === 0) { sel.innerHTML = `<option value="${getToday()}">Today (${getToday()})</option>`; document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem;">No data recorded yet.</div>'; updateChart({}, []); return; }
+            if(dates.length === 0) { sel.innerHTML = `<option value="${getToday()}">Today (${getToday()})</option>`; document.getElementById('sessionsList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:2rem; font-weight:700;">No deep work logged yet.</div>'; updateChart({}, []); return; }
             dates.forEach(d => { const o = document.createElement('option'); o.value = d; o.innerText = new Date(d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); sel.appendChild(o); }); renderDayDetails(); updateChart(data, dates.slice(0, 7).reverse()); updateTimelineStats();
         }
         function renderDayDetails() {
             const data = JSON.parse(localStorage.getItem('pomoDataAdvanced')) || {}, d = document.getElementById('dateSelector').value; const list = document.getElementById('sessionsList'); list.innerHTML = ''; if(!data[d]) return;
-            list.innerHTML = `<div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); font-size: 1.2rem; font-weight: 800;">Total Focus: <span style="color: var(--primary); font-size:1.5rem;">${data[d].totalMins}</span> min</div>`;
-            data[d].sessions.forEach((s, i) => { list.innerHTML += `<div class="session-item"><div class="s-info"><div class="s-name" dir="auto">${s.name}</div><div class="s-meta">${s.duration} Min • ${s.time}</div></div><div class="s-actions"><button class="icon-btn" onclick="editSession('${d}', ${i})" style="background:transparent; border:none; cursor:pointer;"><svg class="icon" style="color:var(--text-muted);"><use href="#icon-edit"></use></svg></button><button class="icon-btn" onclick="deleteSession('${d}', ${i})" style="background:transparent; border:none; cursor:pointer;"><svg class="icon" style="color:var(--text-muted);"><use href="#icon-delete"></use></svg></button></div></div>`; });
+            list.innerHTML = `<div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); font-size: 1.2rem; font-weight: 800; display:flex; justify-content:space-between; align-items:center;">Total Focus <span style="color: var(--primary); font-size:1.8rem;">${data[d].totalMins} <span style="font-size:1rem; color:var(--text-muted);">min</span></span></div>`;
+            data[d].sessions.forEach((s, i) => { list.innerHTML += `<div class="session-item"><div class="s-info"><div class="s-name" dir="auto">${s.name}</div><div class="s-meta">${s.duration} Min • ${s.time}</div></div><div class="s-actions"><button class="icon-btn" onclick="editSession('${d}', ${i})" style="background:transparent; border:none; cursor:pointer; padding:8px;"><svg class="icon" style="color:var(--text-muted);"><use href="#icon-edit"></use></svg></button><button class="icon-btn" onclick="deleteSession('${d}', ${i})" style="background:transparent; border:none; cursor:pointer; padding:8px;"><svg class="icon" style="color:#ef4444;"><use href="#icon-delete"></use></svg></button></div></div>`; });
             if(data[d].distractions && data[d].distractions.length > 0) {
-                list.innerHTML += `<div style="margin: 2rem 0 1rem; font-size: 1.1rem; font-weight: 800; color: #ef4444;">Interruptions Log</div>`;
+                list.innerHTML += `<div style="margin: 2.5rem 0 1rem; font-size: 1.2rem; font-weight: 800; color: #ef4444; text-transform:uppercase; letter-spacing:1px;">Distractions Log</div>`;
                 data[d].distractions.forEach((dist) => { list.innerHTML += `<div class="session-item distraction"><div class="s-info"><div class="s-name" dir="auto">${dist.reason}</div><div class="s-meta">${dist.dur} Min loss • ${dist.time}</div></div></div>`; });
             }
         }
-        function initChart() { const ctx = document.getElementById('mainChart').getContext('2d'); myChart = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [{ label: 'Minutes', data: [], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.05)' }, border: {display: false} }, x: { grid: { display: false }, border: {display: false} } }, plugins: { legend: { display: false } } } }); }
+        function initChart() { const ctx = document.getElementById('mainChart').getContext('2d'); myChart = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [{ label: 'Focus Minutes', data: [], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.05)' }, border: {display: false} }, x: { grid: { display: false }, border: {display: false} } }, plugins: { legend: { display: false } } } }); }
         function updateChart(data, rDates) { Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#888'; Chart.defaults.font.family = 'Outfit'; const lbls = [], cData = []; rDates.forEach(d => { lbls.push(new Date(d).toLocaleDateString('en-US', { weekday: 'short' })); cData.push(data[d].totalMins); }); myChart.data.labels = lbls; myChart.data.datasets[0].data = cData; myChart.data.datasets[0].backgroundColor = currentPrimaryColor; myChart.update(); }
 
-        // --- Timeline Logic & UX ---
         function formatTime(h, b) { const period = h >= 12 ? 'PM' : 'AM'; const dHour = h % 12 === 0 ? 12 : h % 12; const sMin = (b * 5).toString().padStart(2, '0'); const eMin = ((b + 1) * 5); let eDHour = dHour, ePeriod = period, fEMin = eMin.toString().padStart(2, '0'); if (eMin === 60) { fEMin = '00'; const nH = h + 1; ePeriod = nH >= 12 && nH < 24 ? 'PM' : 'AM'; eDHour = nH % 12 === 0 ? 12 : nH % 12; } return `${dHour}:${sMin} ${period} - ${eDHour}:${fEMin} ${ePeriod}`; }
 
         function startPlayheadTracker() {
             const updatePlayhead = () => { 
                 const today = getToday();
-                // Midnight auto-reset check
-                if(currentViewDate !== today && !isReadOnly) {
-                    loadTimelineForDate(today);
-                    return; // reload handles the UI
-                }
+                if(currentViewDate !== today && !isReadOnly) { loadTimelineForDate(today); return; }
 
                 if(!isReadOnly) {
                     const now = new Date(); const totalMins = 24 * 60; const currentMins = now.getHours() * 60 + now.getMinutes(); const percentage = (currentMins / totalMins) * 100; 
                     const playhead = document.getElementById('playhead'); playhead.style.display = 'block'; playhead.style.top = `${percentage}%`; 
                     
                     const currentIdx = getNowIndex();
-                    // Performance: Instead of querySelectorAll, loop through cached elements
                     timeBlockElements.forEach((b, i) => {
                         if(i === currentIdx) b.classList.add('is-now');
                         else b.classList.remove('is-now');
@@ -1076,7 +1371,7 @@
 
         function buildTimelineGrid() {
             timeline.innerHTML = '';
-            timeBlockElements = []; // Reset cache
+            timeBlockElements = []; 
             
             for (let h = 0; h < TOTAL_HOURS; h++) {
                 const row = document.createElement('div'); row.className = 'hour-row';
@@ -1093,24 +1388,18 @@
                     block.addEventListener('touchstart', (e) => { 
                         if(isReadOnly) return;
                         const touch = e.touches[0];
-                        startTouchY = touch.clientY;
-                        startTouchX = touch.clientX;
-                        isTouchDrawing = false;
+                        startTouchY = touch.clientY; startTouchX = touch.clientX; isTouchDrawing = false;
                         
                         touchTimer = setTimeout(() => {
-                            isTouchDrawing = true;
-                            triggerHaptic(50);
-                            startSelection(idx);
-                        }, 250);
+                            isTouchDrawing = true; triggerHaptic(40); startSelection(idx);
+                        }, 200); 
                     }, {passive: true});
                     
                     block.addEventListener('touchmove', (e) => { 
                         if(isReadOnly) return;
                         if (!isTouchDrawing) {
                             const touch = e.touches[0];
-                            if (Math.abs(touch.clientY - startTouchY) > 10 || Math.abs(touch.clientX - startTouchX) > 10) {
-                                clearTimeout(touchTimer);
-                            }
+                            if (Math.abs(touch.clientY - startTouchY) > 10 || Math.abs(touch.clientX - startTouchX) > 10) clearTimeout(touchTimer);
                             return; 
                         }
                         
@@ -1126,14 +1415,11 @@
                     block.addEventListener('touchend', () => {
                         if(isReadOnly) return;
                         clearTimeout(touchTimer);
-                        if(isTouchDrawing) {
-                            endSelection();
-                            isTouchDrawing = false;
-                        }
+                        if(isTouchDrawing) { endSelection(); isTouchDrawing = false; }
                     });
 
                     grid.appendChild(block);
-                    timeBlockElements.push(block); // Add to Cache
+                    timeBlockElements.push(block); 
                 }
                 row.appendChild(grid); timeline.appendChild(row);
             }
@@ -1154,30 +1440,71 @@
         function startSelection(idx) {
             if (isReadOnly || actionPanel.classList.contains('visible')) return; 
             triggerHaptic(20); isDragging = true; 
+            
             if(blocksData[idx].type !== 'blank') {
                 const chain = getChainIndices(idx);
                 chain.forEach(i => currentSelection.add(i)); updateDOMSelection(); openEditPanel(); isDragging = false; return;
             }
-            originalClickType = currentSelection.has(idx) ? 'remove' : 'add'; toggleBlock(idx, originalClickType);
+
+            const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
+            if (sorted.length > 0) {
+                const min = sorted[0]; const max = sorted[sorted.length - 1];
+                if (idx === max + 1 || idx === min - 1) {
+                    originalClickType = 'add'; toggleBlock(idx, originalClickType); return;
+                } else if (idx === max || idx === min) {
+                    originalClickType = 'remove'; toggleBlock(idx, originalClickType); return;
+                } else {
+                    clearSelection(); 
+                }
+            }
+            
+            originalClickType = currentSelection.has(idx) ? 'remove' : 'add'; 
+            toggleBlock(idx, originalClickType);
         }
+
         function moveSelection(idx) {
             if (isReadOnly || !isDragging || actionPanel.classList.contains('visible')) return; 
-            if (blocksData[idx].type === 'blank') { toggleBlock(idx, originalClickType); } 
+            
+            const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
+            if (sorted.length > 0) {
+                const min = sorted[0]; const max = sorted[sorted.length - 1];
+                if (idx === max + 1 || idx === min - 1) {
+                    triggerHaptic(10); currentSelection.add(idx); updateDOMSelection();
+                } else if (idx === max && sorted.length > 1) {
+                    triggerHaptic(10); currentSelection.delete(max); updateDOMSelection();
+                } else if (idx === min && sorted.length > 1) {
+                    triggerHaptic(10); currentSelection.delete(min); updateDOMSelection();
+                }
+            } else {
+                if (blocksData[idx].type === 'blank') { triggerHaptic(10); toggleBlock(idx, originalClickType); } 
+            }
         }
         function endSelection() { isDragging = false; }
         function toggleBlock(idx, mode) { if (mode === 'add') currentSelection.add(idx); else currentSelection.delete(idx); updateDOMSelection(); }
 
         function updateDOMSelection() {
-            // Performance: Using Cached DOM elements
+            const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
             timeBlockElements.forEach((el, idx) => { 
                 el.classList.toggle('selected', currentSelection.has(idx)); 
+                el.classList.remove('chain-start', 'chain-end');
+                if(currentSelection.has(idx)) {
+                    if(idx === sorted[0]) el.classList.add('chain-start');
+                    if(idx === sorted[sorted.length-1]) el.classList.add('chain-end');
+                }
             });
             if (currentSelection.size > 0 && !actionPanel.classList.contains('visible')) { fabCustomize.classList.add('visible'); document.getElementById('fab-count').innerText = currentSelection.size; } else { fabCustomize.classList.remove('visible'); }
         }
 
         function clearSelection() { currentSelection.clear(); updateDOMSelection(); actionPanel.classList.remove('visible'); backupBlocksSnapshot = null; }
 
+        // ================= SMART SLICE & ACTION PANEL LOGIC =================
         function openEditPanel() {
+            // إعادة ضبط زرار الـ Slice عشان ميأثرش على السلاسل التانية
+            const btnSlice = document.getElementById('btn-slice');
+            btnSlice.classList.remove('active-slice');
+            btnSlice.style.borderColor = ''; btnSlice.style.color = '';
+            btnSlice.style.background = ''; btnSlice.style.borderStyle = '';
+
             backupBlocksSnapshot = JSON.stringify(blocksData);
             actionPanel.classList.add('visible'); fabCustomize.classList.remove('visible');
             
@@ -1192,6 +1519,22 @@
             } else { timelineTaskInput.value = ''; blockTypeSelect.value = 'work'; tagEmoji.value = ''; tagText.value = ''; renderSubtasks([]); }
             
             timelineTaskInput.focus(); liveUpdate();
+        }
+
+        function smartSliceTitle() {
+            // تحويل الزرار لـ Toggle Switch (تشغيل/إيقاف)
+            const btn = document.getElementById('btn-slice');
+            btn.classList.toggle('active-slice');
+            if(btn.classList.contains('active-slice')) {
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.color = 'var(--primary)';
+                btn.style.background = 'var(--primary-transparent)';
+                btn.style.borderStyle = 'solid';
+            } else {
+                btn.style.borderColor = ''; btn.style.color = '';
+                btn.style.background = ''; btn.style.borderStyle = '';
+            }
+            liveUpdate(); // إجبار التحديث الفوري لتطبيق الخوارزمية
         }
 
         function shiftBlocksForward() {
@@ -1209,11 +1552,10 @@
             backupBlocksSnapshot = JSON.stringify(blocksData); 
         }
 
-        // Micro Tasks
         function renderSubtasks(tasks) {
             const list = document.getElementById('subtaskList'); list.innerHTML = '';
             tasks.forEach((t, i) => {
-                list.innerHTML += `<div class="subtask-item"><input type="checkbox" ${t.done?'checked':''} onchange="toggleSubtask(${i}, this.checked)"><span style="color: ${t.done?'var(--text-muted)':'var(--text-main)'}; text-decoration: ${t.done?'line-through':'none'}; transition: all 0.3s;">${t.text}</span></div>`;
+                list.innerHTML += `<div class="subtask-item"><input type="checkbox" ${t.done?'checked':''} onchange="triggerHaptic(20); toggleSubtask(${i}, this.checked)"><span style="color: ${t.done?'var(--text-muted)':'var(--text-main)'}; text-decoration: ${t.done?'line-through':'none'}; transition: all 0.3s;">${t.text}</span></div>`;
             });
         }
         function addSubtask() {
@@ -1241,18 +1583,58 @@
                 blocksData = JSON.parse(backupBlocksSnapshot); 
 
                 const sorted = Array.from(currentSelection).sort((a, b) => a - b);
-                const title = timelineTaskInput.value.trim() || 'Task';
+                const title = timelineTaskInput.value.trim() || 'Focus Block';
                 const bType = blockTypeSelect.value;
                 const emoji = tagEmoji.value.trim(); const txt = tagText.value.trim();
                 const tagObj = (emoji || txt) ? { emoji: emoji, text: txt } : null;
                 const existingTasks = blocksData[sorted[0]]?.subtasks || [];
 
                 let isArabic = /[\u0600-\u06FF]/.test(title);
-                let words = title.split(/\s+/).filter(w => w.length > 0); if(isArabic) words.reverse();
+                let words = title.split(/\s+/).filter(w => w.length > 0); 
+                if(isArabic) words.reverse();
 
+                // التحقق مما إذا كان وضع الـ Slice مفعل
+                const isSliced = document.getElementById('btn-slice').classList.contains('active-slice');
+                let displayChunks = [];
+
+                if (isSliced) {
+                    // خوارزمية التجميع والتقطيع الذكية (Smart Grouping & Slicing)
+                    const isMobile = window.innerWidth <= 768;
+                    const gridVal = parseInt(document.getElementById('mobileGridSelect').value) || 6;
+                    let charLimit = isMobile ? Math.floor(100 / gridVal) : 16;
+                    
+                    let currentChunk = "";
+                    words.forEach(w => {
+                        if (w.length > charLimit) {
+                            if (currentChunk.length > 0) { displayChunks.push(currentChunk); currentChunk = ""; }
+                            for(let j=0; j<w.length; j+=charLimit) {
+                                let part = w.substring(j, j+charLimit);
+                                if (j + charLimit < w.length) part += '-';
+                                displayChunks.push(part);
+                            }
+                        } else {
+                            if (currentChunk.length === 0) currentChunk = w;
+                            else if (currentChunk.length + 1 + w.length <= charLimit) currentChunk += " " + w;
+                            else { displayChunks.push(currentChunk); currentChunk = w; }
+                        }
+                    });
+                    if (currentChunk.length > 0) displayChunks.push(currentChunk);
+                } else {
+                    // الطريقة العادية
+                    displayChunks = words; 
+                }
+
+                // تطبيق النصوص على البلوكات المحددة
                 sorted.forEach((idx, i) => {
                     let disp = '-'; 
-                    if (i < words.length) { disp = words[i]; if (i === sorted.length - 1 && words.length > sorted.length) { let rem = words.slice(i); if(isArabic) rem.reverse(); disp = rem.join(' '); } } 
+                    if (i < displayChunks.length) { 
+                        disp = displayChunks[i]; 
+                        if (i === sorted.length - 1 && displayChunks.length > sorted.length) { 
+                            let rem = displayChunks.slice(i); 
+                            if(!isSliced && isArabic) rem.reverse(); // تصحيح اتجاه العربي في الطريقة العادية
+                            disp = rem.join(' '); 
+                        } 
+                    } 
                     blocksData[idx] = { type: bType, title: title, displayWord: disp, actual: false, customTag: tagObj, chainId: currentChainId, subtasks: existingTasks };
                 });
 
@@ -1260,7 +1642,7 @@
                     const lastIdx = sorted[sorted.length - 1]; const restBlocks = parseInt(document.getElementById('rest-duration').value);
                     for(let i = 1; i <= restBlocks; i++) {
                         if (lastIdx + i < blocksData.length && !currentSelection.has(lastIdx + i)) {
-                            blocksData[lastIdx + i] = { type: 'rest', title: 'Rest', displayWord: 'Rest', actual: false };
+                            blocksData[lastIdx + i] = { type: 'rest', title: 'Rest/Recovery', displayWord: 'Rest', actual: false };
                         }
                     }
                 }
@@ -1269,24 +1651,31 @@
         }
 
         function saveHistory() { historyStack.push(JSON.stringify(blocksData)); if(historyStack.length > 20) historyStack.shift(); document.getElementById('btn-undo').disabled = false; }
-        function saveTimelineToLocal() { if(isReadOnly) return; localStorage.setItem(`praxTimeline_${currentViewDate}`, JSON.stringify(blocksData)); }
+        
+        function saveTimelineToLocal() { 
+            if(isReadOnly) return; 
+            localStorage.setItem(`praxTimeline_${currentViewDate}`, JSON.stringify(blocksData)); 
+            triggerSync();
+        }
         
         function saveEdit() { saveHistory(); saveTimelineToLocal(); clearSelection(); }
         function cancelEdit() { if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); renderTimelineBlocks(); updateTimelineStats(); clearSelection(); }
         function clearSelectedBlocks() { saveHistory(); if(backupBlocksSnapshot) blocksData = JSON.parse(backupBlocksSnapshot); currentSelection.forEach(idx => { blocksData[idx] = { type: 'blank', title: '', actual: false }; }); renderTimelineBlocks(); updateTimelineStats(); saveTimelineToLocal(); clearSelection(); }
 
         function renderTimelineBlocks() {
-            // Performance: Using Cached DOM elements to avoid massive reflows
             timeBlockElements.forEach((el, idx) => {
                 const data = blocksData[idx];
                 const isNow = el.classList.contains('is-now');
                 
-                // Rebuild classes
                 let newClasses = 'time-block';
                 if(isNow && !isReadOnly) newClasses += ' is-now';
-                if(currentSelection.has(idx)) newClasses += ' selected';
+                if(currentSelection.has(idx)) {
+                    newClasses += ' selected';
+                    const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
+                    if(idx === sorted[0]) newClasses += ' chain-start';
+                    if(idx === sorted[sorted.length-1]) newClasses += ' chain-end';
+                }
                 
-                // Only update innerHTML if it's not a blank block, or if we need to clear it
                 if (data.type !== 'blank') {
                     newClasses += ` ${data.type} ${data.actual ? 'actual' : 'planned'}`;
                     el.className = newClasses;
@@ -1297,7 +1686,7 @@
 
                     let newHTML = '';
                     if (data.displayWord) newHTML += `<span class="block-title">${data.displayWord}</span>`;
-                    if (data.customTag) newHTML += `<span class="custom-tag">${data.customTag.emoji || '*'}</span>`;
+                    if (data.customTag) newHTML += `<span class="custom-tag">${data.customTag.emoji || '📌'}</span>`;
                     el.innerHTML = newHTML;
                     
                 } else { 
