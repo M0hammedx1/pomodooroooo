@@ -1539,7 +1539,7 @@
             
             if(blocksData[idx].type !== 'blank') {
                 const chain = getChainIndices(idx);
-                chain.forEach(i => currentSelection.add(i)); updateDOMSelection(); openEditPanel(); isDragging = false; return;
+                chain.forEach(i => currentSelection.add(i)); updateDOMSelection(); isDragging = false; return;
             }
 
             const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
