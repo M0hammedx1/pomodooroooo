@@ -330,6 +330,39 @@
         @keyframes pulseDot { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) { 
+            .top-bar { 
+        flex-wrap: nowrap; 
+        gap: 10px; 
+    }
+    .color-palette { 
+        flex-wrap: nowrap; 
+        gap: 6px; 
+    }
+    .color-picker-wrapper { 
+        width: 28px; 
+        height: 28px; 
+    }
+    .swatch { 
+        width: 22px; 
+        height: 22px; 
+    }
+    .mode-switch { 
+        width: 74px; 
+        height: 32px; 
+        padding: 0 8px; 
+    }
+    .mode-switch::after { 
+        width: 24px; 
+        height: 24px; 
+        top: 3px; 
+        left: 3px; 
+    }
+    [data-theme="dark"] .mode-switch::after { 
+        transform: translateX(20px); 
+    }
+    [data-theme="amoled"] .mode-switch::after { 
+        transform: translateX(42px); 
+    }
             .btn-group { flex-wrap: wrap; }
             .action-panel { padding: 1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom)) 1rem; }
             .panel-content { gap: 1rem; }
