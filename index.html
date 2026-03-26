@@ -1680,23 +1680,39 @@
             saveTimelineToLocal(); 
         };
 
-        window.quickRemoveBlock = function(idx, e) {
+       window.quickRemoveBlock = function(idx, e) {
             if (e) { e.stopPropagation(); e.preventDefault(); }
             if (isReadOnly) return;
 
             triggerHaptic([20, 30]);
             saveHistory();
 
-            // مسح البلوك فوراً وتحويله لفراغ بدون أي تأثير على بلوكات الـ Rest
-            blocksData[idx] = { type: 'blank', title: '', actual: false };
+            // 1. حساب عدد بلوكات الراحة الملتصقة قدام البلوك اللي هنمسحه
+            let restCount = 0;
+            let i = idx + 1;
+            while (i <= 287 && blocksData[i].type === 'rest') {
+                restCount++; i++;
+            }
 
-            // مسحه من التحديد لو كان متحدد عشان الـ UI ينضف
+            // 2. سحب بلوكات الراحة لورا خطوة واحدة عشان تقفل الفراغ
+            if (restCount > 0) {
+                for (let j = 1; j <= restCount; j++) {
+                    blocksData[idx + j - 1] = { ...blocksData[idx + j] };
+                }
+                // تفريغ المكان الأخير اللي اتسحب منه بلوك الراحة
+                blocksData[idx + restCount] = { type: 'blank', title: '', actual: false };
+            } else {
+                // لو مفيش بلوكات راحة قدامك، امسح البلوك الحالي عادي
+                blocksData[idx] = { type: 'blank', title: '', actual: false };
+            }
+
+            // تنظيف الـ UI لو البلوك كان متحدد
             if (currentSelection.has(idx)) {
                 currentSelection.delete(idx);
                 updateDOMSelection();
             }
 
-            // رندر وحفظ لحظي فوري (Instant Sync)
+            // رندر وحفظ فوري
             renderTimelineBlocks();
             updateTimelineStats();
             saveTimelineToLocal(); 
