@@ -399,6 +399,7 @@
             .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(3n) { border-right: none; }
             .timeline-wrapper.show-markers[data-marker-style="border"] .blocks-grid[data-grid="6"] .time-block:nth-child(6) { border-bottom: 2px dashed var(--border-color); }
         }
+
     </style>
 </head>
 <body>
@@ -607,6 +608,15 @@
         <div class="modal-content settings-modal">
             <button class="close-btn" onclick="triggerHaptic(); closeModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
             <h2 class="modal-title">Timeline Visuals</h2>
+            <div class="setting-group" style="flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
+                <div class="setting-label"><span>Background Time Zones</span><small>Paint specific hours with subtle colors (e.g. 9, 10, 14)</small></div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div class="color-picker-wrapper" style="width: 38px; height: 38px; border-width: 3px; flex-shrink: 0;"><input type="color" id="zone-color" value="#8b5cf6"></div>
+                    <input type="text" id="zone-hours" placeholder="Hours 0-23 (e.g. 5, 6, 20)" class="setting-input" style="flex: 1; text-align: left; min-width: 150px; font-size: 1rem;" title="Comma separated hours">
+                    <button class="btn btn-primary" style="padding: 8px 16px; min-width: 0; font-size: 0.9rem;" onclick="triggerHaptic(); applyColorToZones()">Paint</button>
+                    <button class="btn" style="padding: 8px 16px; min-width: 0; background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); font-size: 0.9rem;" onclick="triggerHaptic(); clearZoneColors()">Clear</button>
+                </div>
+            </div>
             
             <div class="setting-group">
                 <div class="setting-label"><span>Global Rest Color</span><small>Identify downtime instantly</small></div>
@@ -1100,6 +1110,7 @@
             
             loadSavedConfig(); updateDisplay(); initChart(); 
             buildTimelineGrid(); 
+            applyHourColors();
             initTimelineData(); 
             startPlayheadTracker();
             
@@ -1968,6 +1979,49 @@
                 circle.className = 'exec-circle ' + (score >= 80 ? 'score-high' : score >= 50 ? 'score-med' : 'score-low');
             }
         }
+
+// ================= TIME ZONES BACKGROUNDS =================
+        let hourColors = JSON.parse(localStorage.getItem('pomoHourColors')) || new Array(24).fill(null);
+
+        function applyHourColors() {
+            const rows = document.querySelectorAll('.hour-row');
+            rows.forEach((row, h) => {
+                if (hourColors[h]) {
+                    // تحويل اللون لـ RGBA بشفافية 8% عشان يبقى طيف خفيف جداً (Premium Look)
+                    let hex = hourColors[h].replace('#', '');
+                    let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
+                    row.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.08)`;
+                } else {
+                    row.style.backgroundColor = 'transparent';
+                }
+            });
+        }
+
+        function applyColorToZones() {
+            const color = document.getElementById('zone-color').value;
+            const hoursInput = document.getElementById('zone-hours').value;
+            if (!hoursInput) return;
+            
+            // استخراج الأرقام من النص وتجاهل أي مسافات أو حروف غلط
+            const hours = hoursInput.split(',').map(h => parseInt(h.trim())).filter(h => !isNaN(h) && h >= 0 && h <= 23);
+            
+            hours.forEach(h => hourColors[h] = color);
+            
+            localStorage.setItem('pomoHourColors', JSON.stringify(hourColors));
+            triggerSync(); // الـ Hook هيلقطها ويرفعها لفايربيز فوراً
+            applyHourColors();
+            
+            document.getElementById('zone-hours').value = ''; // تفريغ الحقل بعد التنفيذ
+        }
+
+        function clearZoneColors() {
+            if(!confirm("مسح كل ألوان الخلفيات؟")) return;
+            hourColors = new Array(24).fill(null);
+            localStorage.setItem('pomoHourColors', JSON.stringify(hourColors));
+            triggerSync();
+            applyHourColors();
+        }
+
         // ================= TEMPLATES LOGIC =================
         function openTemplatesModal() {
             renderTemplatesList();
