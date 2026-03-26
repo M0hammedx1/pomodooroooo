@@ -111,7 +111,13 @@
 
         .timer-display { font-size: clamp(4.5rem, 15vw, 8rem); font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 0; transition: color 0.5s, text-shadow 0.5s; line-height: 1; letter-spacing: -3px;}
         .timer-display-wrapper.running .timer-display { color: var(--primary); text-shadow: 0 0 40px var(--primary-glow); }
-        .timer-display-wrapper.flow .timer-display { animation: flowPulseText 2.5s infinite alternate ease-in-out; }
+     .timer-display-wrapper.flow .timer-display {
+            color: var(--primary); /* تأكيد إن اللون هو الأساسي */
+            /* الـ Glow البسيط والناعم متعدد الطبقات */
+            text-shadow: 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow); 
+            /* الحفاظ على أنيميشن النبض الحالي */
+            animation: flowPulseText 2.5s infinite alternate ease-in-out;
+        }
 
         .controls { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 3rem; width: 100%; }
         .btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); padding: 16px clamp(15px, 4vw, 36px); border-radius: 20px; font-size: clamp(0.9rem, 2.5vw, 1.1rem); font-weight: 800; cursor: pointer; transition: var(--transition); text-transform: uppercase; letter-spacing: 1.5px; flex: 1; min-width: 110px; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -221,7 +227,9 @@
 
         .block-title { font-size: clamp(0.6rem, 2vw, 0.75rem); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; padding: 0 2px; max-width: 100%; display: block; text-align: center; letter-spacing: 0.5px; }
         .time-block.actual .block-title { text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
-
+/* Live Progress for active block */
+        .time-block.is-now.work.actual { background: linear-gradient(to right, var(--primary) var(--progress, 0%), var(--block-blank-hover) var(--progress, 0%)) !important; }
+        .time-block.is-now.rest.actual { background: linear-gradient(to right, var(--rest-color) var(--progress, 0%), var(--block-blank-hover) var(--progress, 0%)) !important; }
         .custom-tag { position: absolute; top: -8px; right: -8px; font-size: 13px; font-weight: 800; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); pointer-events: none; z-index: 12; background: var(--surface-color); border-radius: 8px; padding: 4px 6px; border: 1px solid var(--border-color); transition: transform 0.3s;}
         .time-block:hover .custom-tag { transform: scale(1.2) rotate(5deg); }
         
@@ -492,6 +500,10 @@
                     <div class="timeline-date-controls">
                         <input type="date" id="timelineDatePicker" onchange="triggerHaptic(20); loadTimelineForDate(this.value)" title="View Past Records">
                         <button class="tool-btn" id="btn-go-today" title="Back to Today" onclick="triggerHaptic(); loadTimelineForDate(getToday())" style="display:none; width:36px; height:36px;"><svg class="icon-sm"><use href="#icon-reset"></use></svg></button>
+                   <button class="icon-btn" id="btn-templates" onclick="triggerHaptic(20); openTemplatesModal()" title="Templates" style="display: flex; align-items: center; gap: 5px; background: var(--surface-color); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-family: 'Outfit', sans-serif;">
+                    <svg class="icon"><use href="#icon-edit"></use></svg>
+                    <span style="font-size: 0.85rem; font-weight: 800;">Templates</span>
+                </button>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; justify-content: flex-end;">
@@ -672,6 +684,17 @@
                             <h3>Execution Score</h3>
                             <p style="font-family: inherit;">Actual vs Planned</p>
                         </div>
+                        <div id="templatesModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="margin-bottom: 1rem; font-weight: 800; color: var(--text-main);">Daily Templates 📋</h3>
+            <div id="templatesList" style="margin: 1rem 0; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                </div>
+            <div class="btn-group" style="margin-top: 1.5rem;">
+                <button class="btn btn-primary" onclick="triggerHaptic(40); saveCurrentAsTemplate()">Save Current Day</button>
+                <button class="btn" onclick="triggerHaptic(20); closeModal('templatesModal')">Close</button>
+            </div>
+        </div>
+    </div>
                         <div class="exec-circle" id="execScoreCircle">0%</div>
                     </div>
                     <div class="date-select-container">
@@ -818,10 +841,11 @@
 
         // 🧠 HACK: Override localStorage.setItem to auto-track exact edit times (LWW Logic)
         const originalSetItem = localStorage.setItem;
+        const originalSetItem = localStorage.setItem;
         localStorage.setItem = function(key, value) {
             originalSetItem.apply(this, arguments);
-            // تتبع أوقات التعديل للبيانات الحساسة فقط
-            if (!window.isPullingData && (key.startsWith('praxTimeline_') || key === 'pomoDataAdvanced' || key === 'pomoNotes' || key.startsWith('pomo'))) {
+            // ضفنا praxTemplates هنا عشان محرك الـ LWW يلقطه ويرفعه للسحابة
+            if (!window.isPullingData && (key.startsWith('praxTimeline_') || key === 'pomoDataAdvanced' || key === 'pomoNotes' || key.startsWith('pomo') || key === 'praxTemplates')) {
                 originalSetItem.call(this, 'prax_ts_' + key, Date.now().toString());
             }
         };
@@ -1373,9 +1397,22 @@
             closeModal('distractModal'); toggleTimer(); loadFullStats();
         }
 
-        function tick() { 
+       function tick() { 
             if (isFlowMode) { flowSeconds++; updateDisplay(); } else { if (timeLeft > 0) { timeLeft--; updateDisplay(); } else handleComplete(); }
             if(new Date().getSeconds() === 0) syncTimerToTimeline(); 
+            
+            // --- Live Progress Logic ---
+            if (isRunning) {
+                const now = new Date();
+                // حساب النسبة المئوية للثواني داخل الـ 5 دقائق الحالية (300 ثانية)
+                const progress = (((now.getMinutes() % 5) * 60 + now.getSeconds()) / 300) * 100;
+                
+                // حقن النسبة المئوية في البلوك النشط حالياً فقط
+                const activeBlock = document.querySelector('.time-block.is-now.actual');
+                if (activeBlock) {
+                    activeBlock.style.setProperty('--progress', progress + '%');
+                }
+            }
         }
 
         function handleComplete() {
@@ -1824,6 +1861,86 @@
                 circle.textContent = `${score}%`;
                 circle.className = 'exec-circle ' + (score >= 80 ? 'score-high' : score >= 50 ? 'score-med' : 'score-low');
             }
+        }
+        // ================= TEMPLATES LOGIC =================
+        function openTemplatesModal() {
+            renderTemplatesList();
+            openModal('templatesModal');
+        }
+
+        function saveCurrentAsTemplate() {
+            const tempName = prompt("Enter a name for this template (e.g., 'Study Day', 'Weekend'):");
+            if (!tempName || tempName.trim() === "") return;
+
+            // استنساخ اليوم الحالي وتصفير حالة الإنجاز (عشان ينزل كخطة مش كماضي)
+            const cleanBlocks = blocksData.map(b => ({
+                ...b,
+                actual: false 
+            }));
+
+            let templates = JSON.parse(localStorage.getItem('praxTemplates')) || [];
+            templates.push({
+                id: generateId(),
+                name: tempName.trim(),
+                blocks: cleanBlocks
+            });
+
+            localStorage.setItem('praxTemplates', JSON.stringify(templates));
+            triggerSync(); 
+            
+            renderTemplatesList();
+        }
+
+        function renderTemplatesList() {
+            const list = document.getElementById('templatesList');
+            let templates = JSON.parse(localStorage.getItem('praxTemplates')) || [];
+            
+            if (templates.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 1rem 0; font-weight: 700;">No templates saved yet.<br><span style="font-size:0.8rem">Build your perfect day on the timeline, then click 'Save Current Day'.</span></div>`;
+                return;
+            }
+
+            list.innerHTML = templates.map(t => `
+                <div class="session-item" style="display:flex; justify-content:space-between; align-items:center; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px;">
+                    <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-main);">${t.name}</div>
+                    <div style="display:flex; gap: 6px;">
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; height: auto;" onclick="triggerHaptic(30); loadTemplate('${t.id}')">Load</button>
+                        <button class="btn" style="padding: 6px 12px; font-size: 0.8rem; height: auto; background: #ef4444; color: white; border-color: #ef4444;" onclick="triggerHaptic([30,50]); deleteTemplate('${t.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadTemplate(id) {
+            if (isReadOnly) {
+                alert("Cannot load a template into a past day! Go to 'Today' first.");
+                return;
+            }
+
+            if (!confirm("⚠️ Overwrite today's timeline with this template? Any unsaved blocks will be lost.")) return;
+
+            let templates = JSON.parse(localStorage.getItem('praxTemplates')) || [];
+            let targetTemplate = templates.find(t => t.id === id);
+            
+            if (targetTemplate) {
+                saveHistory(); 
+                // Deep Copy لمنع تلوث القالب الأصلي
+                blocksData = JSON.parse(JSON.stringify(targetTemplate.blocks)); 
+                
+                renderTimelineBlocks();
+                updateTimelineStats();
+                saveTimelineToLocal();
+                closeModal('templatesModal');
+            }
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm("Delete this template permanently?")) return;
+            let templates = JSON.parse(localStorage.getItem('praxTemplates')) || [];
+            templates = templates.filter(t => t.id !== id);
+            localStorage.setItem('praxTemplates', JSON.stringify(templates));
+            triggerSync();
+            renderTemplatesList();
         }
     </script>
 </body>
