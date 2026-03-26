@@ -684,17 +684,7 @@
                             <h3>Execution Score</h3>
                             <p style="font-family: inherit;">Actual vs Planned</p>
                         </div>
-                        <div id="templatesModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 400px;">
-            <h3 style="margin-bottom: 1rem; font-weight: 800; color: var(--text-main);">Daily Templates 📋</h3>
-            <div id="templatesList" style="margin: 1rem 0; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                </div>
-            <div class="btn-group" style="margin-top: 1.5rem;">
-                <button class="btn btn-primary" onclick="triggerHaptic(40); saveCurrentAsTemplate()">Save Current Day</button>
-                <button class="btn" onclick="triggerHaptic(20); closeModal('templatesModal')">Close</button>
-            </div>
-        </div>
-    </div>
+                       
                         <div class="exec-circle" id="execScoreCircle">0%</div>
                     </div>
                     <div class="date-select-container">
@@ -707,7 +697,17 @@
             </div>
         </div>
     </div>
-
+ <div id="templatesModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="margin-bottom: 1rem; font-weight: 800; color: var(--text-main);">Daily Templates 📋</h3>
+            <div id="templatesList" style="margin: 1rem 0; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                </div>
+            <div class="btn-group" style="margin-top: 1.5rem;">
+                <button class="btn btn-primary" onclick="triggerHaptic(40); saveCurrentAsTemplate()">Save Current Day</button>
+                <button class="btn" onclick="triggerHaptic(20); closeModal('templatesModal')">Close</button>
+            </div>
+        </div>
+    </div>
     <button id="fab-customize" class="fab-customize">
         <svg class="icon"><use href="#icon-edit"></use></svg> Edit Chain <span class="badge" id="fab-count">0</span>
     </button>
