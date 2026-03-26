@@ -1537,7 +1537,13 @@
             
             for (let h = 0; h < TOTAL_HOURS; h++) {
                 const row = document.createElement('div'); row.className = 'hour-row';
-                const label = document.createElement('div'); label.className = 'hour-label'; label.innerHTML = `<span>${h % 12 === 0 ? 12 : h % 12}</span><span style="font-size:0.7em">${h >= 12 ? 'PM' : 'AM'}</span>`; row.appendChild(label);
+                const label = document.createElement('div'); 
+                label.className = 'hour-label'; 
+                label.style.cursor = 'pointer'; 
+                label.title = "Select whole hour";
+                label.innerHTML = `<span>${h % 12 === 0 ? 12 : h % 12}</span><span style="font-size:0.7em">${h >= 12 ? 'PM' : 'AM'}</span>`; 
+                label.onclick = () => selectWholeHour(h); 
+                row.appendChild(label);
                 
                 const grid = document.createElement('div'); grid.className = 'blocks-grid';
                 for (let b = 0; b < BLOCKS_PER_HOUR; b++) {
@@ -1733,6 +1739,31 @@
 
         function clearSelection() { currentSelection.clear(); updateDOMSelection(); actionPanel.classList.remove('visible'); backupBlocksSnapshot = null; }
 
+        // --- Smart Batch Selection (Whole Hour) ---
+        function selectWholeHour(h) {
+            if (isReadOnly || actionPanel.classList.contains('visible')) return; 
+            
+            triggerHaptic(40);
+
+            let allSelected = true;
+            for (let b = 0; b < 12; b++) {
+                if (!currentSelection.has((h * 12) + b)) { 
+                    allSelected = false; 
+                    break; 
+                }
+            }
+
+            for (let b = 0; b < 12; b++) {
+                const idx = (h * 12) + b;
+                if (allSelected) {
+                    currentSelection.delete(idx);
+                } else {
+                    currentSelection.add(idx);
+                }
+            }
+
+            updateDOMSelection();
+        }
         // ================= SMART SLICE & ACTION PANEL LOGIC =================
         function openEditPanel() {
             const btnSlice = document.getElementById('btn-slice');
