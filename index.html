@@ -241,7 +241,7 @@
 
         /* --- New: Floating Quick Actions for chain end --- */
         .time-block .quick-actions { display: none; position: absolute; top: -45px; right: 0; background: var(--surface-color); border: 2px solid var(--border-color); border-radius: 12px; padding: 4px; gap: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); z-index: 200; backdrop-filter: blur(10px); }
-        .time-block.chain-end.selected .quick-actions { display: flex; }
+        .time-block.chain-end.selected:not(.rest) .quick-actions { display: flex; }
         .qa-btn { width: 32px; height: 32px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 1.2rem; }
         .qa-btn-add { background: var(--primary-transparent); color: var(--primary); }
         .qa-btn-add:hover { background: var(--primary); color: #fff; transform: scale(1.1); }
@@ -802,6 +802,7 @@
                 setTimeout(() => authOverlay.style.display = 'none', 600);
                 pullFromCloud(); 
                 listenToLiveTimer(); 
+                listenToCloudData();
             } else {
                 authOverlay.style.display = 'flex';
                 void authOverlay.offsetWidth;
@@ -912,6 +913,24 @@
                 setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
             }).catch(err => console.error("Pull error:", err));
         }
+        // ================= REAL-TIME DATA LISTENER =================
+        let lastCloudUpdateTime = 0;
+        
+        function listenToCloudData() {
+            if(!auth.currentUser) return;
+            db.collection('users').doc(auth.currentUser.uid).onSnapshot(doc => {
+                // التأكد إن التعديل ده جاي من سيرفر مش من الجهاز اللي إحنا عليه دلوقتي
+                if (doc.exists && !doc.metadata.hasPendingWrites) {
+                    const cloudTime = doc.data().lastSync?.toMillis() || 0;
+                    // لو الداتا اللي على السيرفر أحدث من آخر مرة سحبنا فيها
+                    if (cloudTime > lastCloudUpdateTime) {
+                        console.log("☁️ New data detected from another device. Pulling in background...");
+                        lastCloudUpdateTime = cloudTime;
+                        pullFromCloud(); // اسحب وادمج بصمت
+                    }
+                }
+            });
+        }
 
         function triggerSync() {
             if(!auth.currentUser) return;
@@ -938,6 +957,7 @@
                     localStorageBackup: mergedJsonToPush,
                     lastSync: firebase.firestore.FieldValue.serverTimestamp()
                 }, {merge: true}).then(() => {
+                    lastCloudUpdateTime = Date.now(); // تحديث الوقت المحلي لمنع اللوب
                     isSyncing = false;
                     syncStatusUI.classList.remove('syncing'); syncStatusUI.classList.add('synced'); syncStatusUI.style.color = '#10b981'; syncTextUI.innerText = 'Synced';
                     setTimeout(() => { syncStatusUI.style.opacity = '0'; syncStatusUI.classList.remove('synced'); }, 3000);
@@ -945,7 +965,17 @@
             });
         }
 
-        window.addEventListener('beforeunload', (e) => { if(isSyncing) { executeSync(); } });
+    // 🛡️ Mobile-Safe Save Triggers
+        window.addEventListener('beforeunload', () => { 
+            if(isSyncing) executeSync(); 
+        });
+        
+        document.addEventListener('visibilitychange', () => {
+            // أول ما المتصفح ينزل في الخلفية أو تقفل الشاشة، اجبر التطبيق يرفع الداتا فوراً
+            if (document.visibilityState === 'hidden' && isSyncing) {
+                executeSync();
+            }
+        });
         
         // ================= REAL-TIME TIMER SYNC =================
         let lastLiveUpdate = 0;
