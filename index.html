@@ -1644,32 +1644,62 @@
         function endSelection() { isDragging = false; }
         function toggleBlock(idx, mode) { if (mode === 'add') currentSelection.add(idx); else currentSelection.delete(idx); updateDOMSelection(); }
 
-        // --- Quick Add & Remove Block logic ---
-        window.quickAddBlock = function() {
+        // --- Instant Quick Actions (Standalone, direct mutation) ---
+        window.quickAddBlock = function(idx, e) {
+            if (e) { e.stopPropagation(); e.preventDefault(); }
+            if (isReadOnly || idx >= 287) return;
+
             triggerHaptic(20);
-            const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
-            if(sorted.length === 0) return;
-            const max = sorted[sorted.length - 1];
-            if(max < 287) {
-                currentSelection.add(max + 1);
-                updateDOMSelection();
-                if(actionPanel.classList.contains('visible')) liveUpdate();
+            
+            // حساب عدد بلوكات الراحة الملتصقة بالذيل لزقها للأمام
+            let restCount = 0;
+            let i = idx + 1;
+            while (i <= 287 && blocksData[i].type === 'rest') {
+                restCount++; i++;
             }
+
+            // التأكد من وجود مساحة كافية
+            if (idx + 1 + restCount > 287 || (restCount === 0 && blocksData[idx+1].type !== 'blank') || (restCount > 0 && blocksData[idx + 1 + restCount].type !== 'blank')) {
+                 alert("لا توجد مساحة كافية للتمديد!");
+                 return; 
+            }
+
+            saveHistory(); // نقطة استرجاع Undo
+
+            // 1. زق بلوكات الراحة لقدام خطوة واحدة (عشان تفضل متصلة بإعداداتها)
+            for (let j = restCount; j > 0; j--) {
+                blocksData[idx + 1 + j] = { ...blocksData[idx + j] };
+            }
+
+            // 2. إدراج بلوك الشغل الجديد مكان الفراغ اللي اتعمل
+            blocksData[idx + 1] = { ...blocksData[idx], actual: false };
+
+            // 3. رندر وحفظ لحظي فوري (Instant Sync)
+            renderTimelineBlocks();
+            updateTimelineStats();
+            saveTimelineToLocal(); 
         };
 
-        window.quickRemoveBlock = function() {
-            triggerHaptic(20);
-            const sorted = Array.from(currentSelection).sort((a,b)=>a-b);
-            if(sorted.length === 0) return;
-            const max = sorted[sorted.length - 1];
-            currentSelection.delete(max);
-            
-            if(currentSelection.size === 0) {
-                cancelEdit(); 
-            } else {
+        window.quickRemoveBlock = function(idx, e) {
+            if (e) { e.stopPropagation(); e.preventDefault(); }
+            if (isReadOnly) return;
+
+            triggerHaptic([20, 30]);
+            saveHistory();
+
+            // مسح البلوك فوراً وتحويله لفراغ بدون أي تأثير على بلوكات الـ Rest
+            blocksData[idx] = { type: 'blank', title: '', actual: false };
+
+            // مسحه من التحديد لو كان متحدد عشان الـ UI ينضف
+            if (currentSelection.has(idx)) {
+                currentSelection.delete(idx);
                 updateDOMSelection();
-                if(actionPanel.classList.contains('visible')) liveUpdate();
             }
+
+            // رندر وحفظ لحظي فوري (Instant Sync)
+            renderTimelineBlocks();
+            updateTimelineStats();
+            saveTimelineToLocal(); 
         };
 
         function updateDOMSelection() {
@@ -1847,10 +1877,10 @@
                     if(idx === sorted[sorted.length-1]) newClasses += ' chain-end';
                 }
 
-                // الـ Quick Actions Buttons اللي هتظهر للـ chain-end
+               // الـ Quick Actions Buttons اللي هتظهر للـ chain-end
                 let qaHTML = `<div class="quick-actions">
-                    <button class="qa-btn qa-btn-add" onmousedown="event.stopPropagation();" ontouchstart="event.stopPropagation();" onclick="event.stopPropagation(); quickAddBlock()">+</button>
-                    <button class="qa-btn qa-btn-del" onmousedown="event.stopPropagation();" ontouchstart="event.stopPropagation();" onclick="event.stopPropagation(); quickRemoveBlock()">×</button>
+                    <button class="qa-btn qa-btn-add" onmousedown="event.stopPropagation();" ontouchstart="event.stopPropagation();" onclick="quickAddBlock(${idx}, event)">+</button>
+                    <button class="qa-btn qa-btn-del" onmousedown="event.stopPropagation();" ontouchstart="event.stopPropagation();" onclick="quickRemoveBlock(${idx}, event)">×</button>
                 </div>`;
                 
                 if (data.type !== 'blank') {
