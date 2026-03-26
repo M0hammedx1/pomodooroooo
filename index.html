@@ -609,12 +609,24 @@
             <button class="close-btn" onclick="triggerHaptic(); closeModal('timelineSettingsModal')"><svg class="icon"><use href="#icon-close"></use></svg></button>
             <h2 class="modal-title">Timeline Visuals</h2>
             <div class="setting-group" style="flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px dashed var(--border-color);">
-                <div class="setting-label"><span>Background Time Zones</span><small>Paint specific hours with subtle colors (e.g. 9, 10, 14)</small></div>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <div class="color-picker-wrapper" style="width: 38px; height: 38px; border-width: 3px; flex-shrink: 0;"><input type="color" id="zone-color" value="#8b5cf6"></div>
-                    <input type="text" id="zone-hours" placeholder="Hours 0-23 (e.g. 5, 6, 20)" class="setting-input" style="flex: 1; text-align: left; min-width: 150px; font-size: 1rem;" title="Comma separated hours">
-                    <button class="btn btn-primary" style="padding: 8px 16px; min-width: 0; font-size: 0.9rem;" onclick="triggerHaptic(); applyColorToZones()">Paint</button>
-                    <button class="btn" style="padding: 8px 16px; min-width: 0; background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); font-size: 0.9rem;" onclick="triggerHaptic(); clearZoneColors()">Clear</button>
+                <div class="setting-label" style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                    <div><span>Time Zones Manager</span><small>Group & color your routines</small></div>
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem; min-width:0; border-radius:10px;" onclick="triggerHaptic(); openCreateZoneUI()">+ New Zone</button>
+                </div>
+                
+                <div id="timeZonesList" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+                
+                <div id="createZoneUI" style="display:none; flex-direction:column; gap:12px; background:var(--bg-color); padding:16px; border:2px solid var(--border-color); border-radius:16px; margin-top:8px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="newZoneName" placeholder="Name (e.g., Focus, Morning...)" class="setting-input" style="flex:1; text-align:left; font-size:1rem;">
+                        <div class="color-picker-wrapper" style="width:40px; height:40px; border-width:2px; flex-shrink:0;"><input type="color" id="newZoneColor" value="#8b5cf6"></div>
+                    </div>
+                    <div id="hourToggles" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:5px;"></div>
+                    
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:5px;">
+                        <button class="btn" style="padding: 8px 16px; min-width:0; font-size:0.9rem;" onclick="triggerHaptic(); cancelCreateZone()">Cancel</button>
+                        <button class="btn btn-primary" style="padding: 8px 16px; min-width:0; font-size:0.9rem;" onclick="triggerHaptic(); saveNewZone()">Save Zone</button>
+                    </div>
                 </div>
             </div>
             
@@ -1110,7 +1122,7 @@
             
             loadSavedConfig(); updateDisplay(); initChart(); 
             buildTimelineGrid(); 
-            applyHourColors();
+            renderTimeZones();
             initTimelineData(); 
             startPlayheadTracker();
             
@@ -1980,46 +1992,108 @@
             }
         }
 
-// ================= TIME ZONES BACKGROUNDS =================
-        let hourColors = JSON.parse(localStorage.getItem('pomoHourColors')) || new Array(24).fill(null);
+// ================= TIME ZONES MANAGER (V2) =================
+        let timeZones = JSON.parse(localStorage.getItem('pomoTimeZones')) || [];
+        let selectedHoursForZone = new Set();
+
+        function renderTimeZones() {
+            const list = document.getElementById('timeZonesList');
+            if (timeZones.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.9rem; font-weight:700; padding:10px 0;">No zones defined yet. Create one!</div>`;
+            } else {
+                list.innerHTML = timeZones.map((z, i) => `
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--surface-color); padding:10px 14px; border-radius:12px; border:1px solid var(--border-color); border-left: 5px solid ${z.color};">
+                        <div>
+                            <div style="font-weight:800; font-size:1rem; color:var(--text-main);">${z.name}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">${z.hours.length} Hours Selected</div>
+                        </div>
+                        <button class="icon-btn" onclick="triggerHaptic(30); deleteZone(${i})" style="color:#ef4444; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:6px; cursor:pointer;"><svg class="icon-sm"><use href="#icon-delete"></use></svg></button>
+                    </div>
+                `).join('');
+            }
+            applyHourColors();
+        }
 
         function applyHourColors() {
-            const rows = document.querySelectorAll('.hour-row');
-            rows.forEach((row, h) => {
-                if (hourColors[h]) {
-                    // تحويل اللون لـ RGBA بشفافية 8% عشان يبقى طيف خفيف جداً (Premium Look)
-                    let hex = hourColors[h].replace('#', '');
-                    let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
-                    row.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.08)`;
-                } else {
-                    row.style.backgroundColor = 'transparent';
-                }
+            // حل المشكلة: إحنا هنا بنستهدف الـ blocks-grid نفسها اللي كانت بتغطي على اللون!
+            const grids = document.querySelectorAll('.hour-row .blocks-grid');
+            
+            // تصفير الألوان الأول للكل
+            grids.forEach(g => g.style.backgroundColor = 'var(--bg-color)'); 
+            
+            timeZones.forEach(zone => {
+                let hex = zone.color.replace('#', '');
+                let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
+                let rgba = `rgba(${r}, ${g}, ${b}, 0.08)`;
+                
+                zone.hours.forEach(h => {
+                    if (grids[h]) {
+                        grids[h].style.backgroundColor = rgba;
+                        grids[h].style.transition = 'background-color 0.5s'; 
+                    }
+                });
             });
         }
 
-        function applyColorToZones() {
-            const color = document.getElementById('zone-color').value;
-            const hoursInput = document.getElementById('zone-hours').value;
-            if (!hoursInput) return;
+        function openCreateZoneUI() {
+            document.getElementById('createZoneUI').style.display = 'flex';
+            document.getElementById('timeZonesList').style.display = 'none'; // نخفي القائمة عشان نركز
             
-            // استخراج الأرقام من النص وتجاهل أي مسافات أو حروف غلط
-            const hours = hoursInput.split(',').map(h => parseInt(h.trim())).filter(h => !isNaN(h) && h >= 0 && h <= 23);
-            
-            hours.forEach(h => hourColors[h] = color);
-            
-            localStorage.setItem('pomoHourColors', JSON.stringify(hourColors));
-            triggerSync(); // الـ Hook هيلقطها ويرفعها لفايربيز فوراً
-            applyHourColors();
-            
-            document.getElementById('zone-hours').value = ''; // تفريغ الحقل بعد التنفيذ
+            // رسم الـ 24 ساعة كزراير قابلة للضغط
+            const toggles = document.getElementById('hourToggles');
+            toggles.innerHTML = Array.from({length: 24}, (_, i) => {
+                const label = `${i % 12 === 0 ? 12 : i % 12}${i >= 12 ? 'PM' : 'AM'}`;
+                return `<div id="chip-${i}" onclick="toggleHourChip(${i})" style="padding:6px 10px; border-radius:12px; background:var(--surface-color); border:2px solid var(--border-color); font-size:0.85rem; cursor:pointer; font-weight:800; color:var(--text-muted); user-select:none; transition:var(--transition);">${label}</div>`;
+            }).join('');
         }
 
-        function clearZoneColors() {
-            if(!confirm("مسح كل ألوان الخلفيات؟")) return;
-            hourColors = new Array(24).fill(null);
-            localStorage.setItem('pomoHourColors', JSON.stringify(hourColors));
+        function toggleHourChip(h) {
+            triggerHaptic(10);
+            const chip = document.getElementById(`chip-${h}`);
+            if (selectedHoursForZone.has(h)) {
+                selectedHoursForZone.delete(h);
+                chip.style.background = 'var(--surface-color)';
+                chip.style.color = 'var(--text-muted)';
+                chip.style.borderColor = 'var(--border-color)';
+            } else {
+                selectedHoursForZone.add(h);
+                chip.style.background = 'var(--primary-transparent)';
+                chip.style.color = 'var(--primary)';
+                chip.style.borderColor = 'var(--primary)';
+            }
+        }
+
+        function cancelCreateZone() {
+            document.getElementById('createZoneUI').style.display = 'none';
+            document.getElementById('timeZonesList').style.display = 'flex';
+            selectedHoursForZone.clear();
+            document.getElementById('newZoneName').value = '';
+        }
+
+        function saveNewZone() {
+            const name = document.getElementById('newZoneName').value.trim() || 'Custom Zone';
+            const color = document.getElementById('newZoneColor').value;
+            if (selectedHoursForZone.size === 0) {
+                alert("حدد ساعة واحدة على الأقل!"); return;
+            }
+            
+            timeZones.push({
+                name, color, hours: Array.from(selectedHoursForZone)
+            });
+            
+            localStorage.setItem('pomoTimeZones', JSON.stringify(timeZones));
+            triggerSync(); // رفع مباشر لفايربيز
+            
+            cancelCreateZone();
+            renderTimeZones();
+        }
+
+        function deleteZone(idx) {
+            if(!confirm("تمسح المنطقة دي؟")) return;
+            timeZones.splice(idx, 1);
+            localStorage.setItem('pomoTimeZones', JSON.stringify(timeZones));
             triggerSync();
-            applyHourColors();
+            renderTimeZones();
         }
 
         // ================= TEMPLATES LOGIC =================
